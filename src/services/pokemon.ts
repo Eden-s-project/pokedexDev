@@ -210,7 +210,7 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
           height
           weight
           pokemon_v2_pokemonspecy {
-            pokemon_v2_pokemonspeciesflavortexts(where: {language_id: {_eq: 9}}, limit: 1) {
+            pokemon_v2_pokemonspeciesflavortexts(where: {language_id: {_eq: 9}}, order_by: {version_id: desc}, limit: 1) {
               flavor_text
             }
             pokemon_v2_evolutionchain {
