@@ -32,7 +32,7 @@ export function PokemonDetails() {
             <PokemonDexEntry pokemon={pokemon} />
           </div>
           <PokemonSkills abilities={pokemon.abilities} moves={pokemon.moves} />
-          <EvolutionChain evolutions={pokemon.evolutions} />
+          <EvolutionChain stages={pokemon.evolutionStages} />
         </div>
       )}
     </div>

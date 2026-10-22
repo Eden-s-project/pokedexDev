@@ -1,13 +1,34 @@
-import React from 'react';
+import { Fragment } from 'react';
 import type { EvolutionNode } from '../services/pokemon';
 import { Link } from 'react-router-dom';
 
 interface EvolutionChainProps {
-    evolutions: EvolutionNode[];
+    stages: EvolutionNode[][];
 }
 
-export const EvolutionChain = ({ evolutions }: EvolutionChainProps) => {
-    if (!evolutions || evolutions.length <= 1) {
+function EvolutionCard({ evo }: { evo: EvolutionNode }) {
+    return (
+        // Link pelo número: o nome da espécie nem sempre é o nome do Pokémon (wormadam -> wormadam-plant)
+        <Link
+            to={`/pokemon/${evo.id}`}
+            className="flex flex-col items-center hover:translate-y-[-4px] transition-transform duration-200"
+        >
+            <div className="w-20 h-20 md:w-28 md:h-28 bg-slate-200 border-4 border-slate-900 rounded-full flex items-center justify-center mb-3 shadow-[4px_4px_0_0_rgba(0,0,0,1)] relative overflow-hidden">
+                <div className="absolute inset-0 bg-white/40"></div>
+                <img
+                    src={evo.image}
+                    alt={evo.name}
+                    className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-md z-10"
+                    loading="lazy"
+                />
+            </div>
+            <span className="font-bold text-slate-900 uppercase tracking-widest font-retro text-lg">{evo.name}</span>
+        </Link>
+    );
+}
+
+export function EvolutionChain({ stages }: EvolutionChainProps) {
+    if (stages.flat().length <= 1) {
         return null;
     }
 
@@ -17,29 +38,19 @@ export const EvolutionChain = ({ evolutions }: EvolutionChainProps) => {
                 Evolution Chain
             </h3>
 
-            <div className="flex flex-row flex-wrap items-center justify-center gap-2 md:gap-4">
-                {evolutions.map((evo, index) => (
-                    <React.Fragment key={evo.id}>
-                        {/* Pokemon Node */}
-                        <Link
-                            to={`/pokemon/${evo.name.toLowerCase()}`}
-                            className="flex flex-col items-center hover:translate-y-[-4px] transition-transform duration-200"
-                        >
-                            <div className="w-20 h-20 md:w-28 md:h-28 bg-slate-200 border-4 border-slate-900 rounded-full flex items-center justify-center mb-3 shadow-[4px_4px_0_0_rgba(0,0,0,1)] relative overflow-hidden">
-                                <div className="absolute inset-0 bg-white/40"></div>
-                                <img
-                                    src={evo.image}
-                                    alt={evo.name}
-                                    className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow-md z-10"
-                                    loading="lazy"
-                                />
-                            </div>
-                            <span className="font-bold text-slate-900 uppercase tracking-widest font-retro text-lg">{evo.name}</span>
-                        </Link>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+                {stages.map((stage, index) => (
+                    <Fragment key={index}>
+                        {/* Estágio: evoluções irmãs lado a lado (ex.: as 8 da Eevee) */}
+                        <div className="flex flex-wrap justify-center gap-4 md:gap-6 max-w-xl">
+                            {stage.map((evo) => (
+                                <EvolutionCard key={evo.id} evo={evo} />
+                            ))}
+                        </div>
 
-                        {/* Arrow (except for the last item) */}
-                        {index < evolutions.length - 1 && (
-                            <div className="flex text-slate-900 mx-2 md:mx-6">
+                        {/* Seta entre estágios: para baixo no celular, para a direita no desktop */}
+                        {index < stages.length - 1 && (
+                            <div className="flex text-slate-900 md:mx-6 rotate-90 md:rotate-0">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     width="32"
@@ -57,9 +68,9 @@ export const EvolutionChain = ({ evolutions }: EvolutionChainProps) => {
                                 </svg>
                             </div>
                         )}
-                    </React.Fragment>
+                    </Fragment>
                 ))}
             </div>
         </div>
     );
-};
+}
