@@ -3,6 +3,7 @@ import { computeTypeMatchups, type TypeMatchups } from '../utils/typeEffectivene
 import { formatPlace, groupEncounters, type EncounterRow, type GameEncounters } from '../utils/encounters';
 import { describeEvolutions, type EvolutionCondition } from '../utils/evolution';
 import type { SpeciesInfo } from '../utils/speciesInfo';
+import { titleCase } from '../utils/text';
 
 const pokeApiGraphQLSchema = z.object({
     data: z.object({
@@ -688,9 +689,6 @@ export async function fetchPokemonEncounters(pokemonId: number): Promise<GameEnc
 
     const json = await postGraphQL(query, { id: pokemonId });
     const { encounters, areas, versions, methods } = encountersSchema.parse(json).data;
-
-    const titleCase = (slug: string) =>
-        slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
     const placeById = new Map(areas.map((area) => {
         const location = area.pokemon_v2_location;

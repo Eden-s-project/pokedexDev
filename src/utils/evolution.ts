@@ -1,3 +1,5 @@
+import { titleCase } from './text';
+
 // Uma forma de evoluir, como vem da PokéAPI (pokemon_v2_pokemonevolution), com os nomes em slug
 export interface EvolutionCondition {
     trigger: string;            // level-up, use-item, trade, shed...
@@ -20,8 +22,6 @@ export interface EvolutionCondition {
     upsideDown: boolean;
 }
 
-const titleCase = (slug: string) =>
-    slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
 // "a", "a ou b", "a, b ou c"
 const joinOr = (items: string[]) =>

@@ -1,3 +1,5 @@
+import { titleCase } from './text';
+
 // Dados da espécie (pokemon_v2_pokemonspecies) usados na ficha
 export interface SpeciesInfo {
     genus: string | null;        // "Flame Pokémon" (a API não tem pt-BR)
@@ -85,8 +87,6 @@ const statLabels: Record<string, string> = {
     'speed': 'Velocidade',
 };
 
-const titleCase = (slug: string) =>
-    slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
 export const growthRateLabel = (slug: string) => growthRateLabels[slug] ?? titleCase(slug);
 export const habitatLabel = (slug: string) => habitatLabels[slug] ?? titleCase(slug);
