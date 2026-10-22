@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { typeColors } from "../utils/constants";
 import type { PokemonDetailedData } from "../services/pokemon";
 
@@ -9,7 +9,7 @@ interface PokemonProfileCardProps {
 // Os gritos da PokéAPI são .ogg; Safari antigo não toca esse formato
 const canPlayOgg = typeof Audio !== 'undefined' && new Audio().canPlayType('audio/ogg; codecs="vorbis"') !== '';
 
-const cryLabels = { idle: '🔊 Grito', playing: '🔊 Tocando…', error: 'Som indisponível' };
+const cryLabels = { idle: '🔊 Grito', playing: '🔊 Tocando…', error: '🔊 Tentar de novo' };
 
 export function PokemonProfileCard({ pokemon }: PokemonProfileCardProps) {
   const badges = [
@@ -19,15 +19,37 @@ export function PokemonProfileCard({ pokemon }: PokemonProfileCardProps) {
   ].filter((badge): badge is { label: string; className: string } => Boolean(badge));
 
   const [shiny, setShiny] = useState(false);
-  // Alguma forma pode não ter arte shiny: volta para a normal e desliga o botão
-  const [shinyMissing, setShinyMissing] = useState(false);
+  // Falha ao carregar a arte shiny (rede instável ou forma sem arte) volta para a normal,
+  // mas o botão continua ativo para tentar de novo
+  const [shinyFailed, setShinyFailed] = useState(false);
   const shinyImage = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${pokemon.id}.png`;
 
   const [cryState, setCryState] = useState<keyof typeof cryLabels>('idle');
+  // Áudio tocando agora + o controlador que remove os ouvintes dele
+  const cryRef = useRef<{ audio: HTMLAudioElement; listeners: AbortController } | null>(null);
+
+  // Ao sair do Pokémon (o card é recriado a cada navegação), o grito para
+  useEffect(() => {
+    const cry = cryRef;
+    return () => {
+      cry.current?.listeners.abort();
+      cry.current?.audio.pause();
+    };
+  }, []);
+
   const playCry = () => {
+    cryRef.current?.listeners.abort();
+    cryRef.current?.audio.pause();
+
     const audio = new Audio(`https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${pokemon.id}.ogg`);
+    const listeners = new AbortController();
     audio.volume = 0.5;
-    audio.addEventListener('ended', () => setCryState('idle'));
+    // Qualquer fim destrava o botão: acabou, pausado pelo sistema/outra mídia, ou erro de rede
+    audio.addEventListener('ended', () => setCryState('idle'), { signal: listeners.signal });
+    audio.addEventListener('pause', () => setCryState('idle'), { signal: listeners.signal });
+    audio.addEventListener('error', () => setCryState('error'), { signal: listeners.signal });
+    cryRef.current = { audio, listeners };
+
     setCryState('playing');
     audio.play().catch(() => setCryState('error'));
   };
@@ -64,7 +86,7 @@ export function PokemonProfileCard({ pokemon }: PokemonProfileCardProps) {
           onError={() => {
             if (shiny) {
               setShiny(false);
-              setShinyMissing(true);
+              setShinyFailed(true);
             }
           }}
           className="w-56 h-56 object-contain hover:scale-110 transition-transform duration-300 relative z-10 drop-shadow-md"
@@ -74,19 +96,22 @@ export function PokemonProfileCard({ pokemon }: PokemonProfileCardProps) {
       <div className="flex flex-wrap justify-center gap-2 mb-8">
         <button
           type="button"
-          onClick={() => setShiny((value) => !value)}
-          disabled={shinyMissing}
+          onClick={() => {
+            setShinyFailed(false);
+            setShiny((value) => !value);
+          }}
           aria-pressed={shiny}
-          title={shinyMissing ? 'Arte shiny indisponível' : undefined}
-          className={`px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest border-2 border-slate-900 shadow-[2px_2px_0_0_rgba(0,0,0,1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500 ${shiny ? 'bg-yellow-400 text-slate-900' : 'bg-slate-200 text-slate-900 hover:bg-white'}`}
+          title={shinyFailed ? 'Não foi possível carregar a arte shiny. Clique para tentar de novo.' : undefined}
+          // Ligado: fundo escuro e borda amarela (amarelo sobre amarelo escondia o ✨)
+          className={`px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest border-2 shadow-[2px_2px_0_0_rgba(0,0,0,1)] transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500 ${shiny ? 'bg-slate-900 text-yellow-300 border-yellow-300' : 'bg-slate-200 text-slate-900 border-slate-900 hover:bg-white'}`}
         >
-          ✨ Shiny
+          {shinyFailed ? '✨ Tentar shiny de novo' : '✨ Shiny'}
         </button>
         <button
           type="button"
           onClick={playCry}
-          disabled={!canPlayOgg || cryState !== 'idle'}
-          title={canPlayOgg ? undefined : 'Seu navegador não toca áudio OGG'}
+          disabled={!canPlayOgg || cryState === 'playing'}
+          title={!canPlayOgg ? 'Seu navegador não toca áudio OGG' : cryState === 'error' ? 'Não foi possível tocar o grito' : undefined}
           className="px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest border-2 border-slate-900 shadow-[2px_2px_0_0_rgba(0,0,0,1)] bg-slate-200 text-slate-900 hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500"
         >
           {cryLabels[cryState]}
