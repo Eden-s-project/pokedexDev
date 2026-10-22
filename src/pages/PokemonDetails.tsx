@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchPokemonByName } from "../services/pokemon";
+import { fetchPokemonByName, POKEMON_NOT_FOUND } from "../services/pokemon";
 import { SkeletonDetails } from "../components/SkeletonDetails";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { DetailsNavigation } from "../components/DetailsNavigation";
@@ -13,11 +13,14 @@ import { TypeMatchupsCard } from "../components/TypeMatchupsCard";
 
 export function PokemonDetails() {
   const { name } = useParams<{ name: string }>();
-  const { data: pokemon, isLoading, isError } = useQuery({
+  const { data: pokemon, isLoading, isError, error } = useQuery({
     queryKey: ['pokemon', name],
     queryFn: () => fetchPokemonByName(name as string),
     enabled: !!name,
+    // Nome/número inexistente não muda numa segunda tentativa; falha de rede tenta 1 vez de novo
+    retry: (failureCount, err) => err.message !== POKEMON_NOT_FOUND && failureCount < 1,
   });
+  const notFound = error?.message === POKEMON_NOT_FOUND;
 
   // Trocar de Pokémon pela cadeia de evolução mantinha a página rolada lá embaixo
   useEffect(() => {
@@ -30,7 +33,9 @@ export function PokemonDetails() {
       <DetailsNavigation pokemon={pokemon} />
 
       {isLoading && <div className="w-full flex justify-center"><SkeletonDetails /></div>}
-      {isError && <ErrorMessage />}
+      {isError && (notFound
+        ? <ErrorMessage title="Pokémon não encontrado" message={`Nenhum Pokémon com o nome ou número "${name}".`} />
+        : <ErrorMessage />)}
 
       {pokemon && !isLoading && !isError && (
         <div className="flex flex-col gap-8 max-w-5xl w-full">

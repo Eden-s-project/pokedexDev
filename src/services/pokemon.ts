@@ -196,6 +196,9 @@ export function groupByEvolutionStage(species: EvolutionSpecies[]): EvolutionNod
 // Nova função para buscar os dados completos de 1 Pokémon
 // Aceita o nome ("pikachu") ou o número ("25") vindo da URL
 // --------------------------------------------------------
+// Mensagem do erro de "não existe": a página usa para mostrar aviso próprio e não repetir a busca
+export const POKEMON_NOT_FOUND = 'Pokémon não encontrado';
+
 export async function fetchPokemonByName(name: string): Promise<PokemonDetailedData> {
     // O valor vai como variável do GraphQL, nunca colado no texto da query
     const where = /^\d+$/.test(name)
@@ -276,7 +279,7 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
     const validResponse = pokeApiDetailedGraphQLSchema.parse(json);
 
     if (validResponse.data.pokemon_v2_pokemon.length === 0) {
-        throw new Error('Pokémon não encontrado');
+        throw new Error(POKEMON_NOT_FOUND);
     }
 
     const data = validResponse.data.pokemon_v2_pokemon[0];
