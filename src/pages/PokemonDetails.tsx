@@ -11,6 +11,7 @@ import { EvolutionChain } from "../components/EvolutionChain";
 import { PokemonSkills } from "../components/PokemonSkills";
 import { TypeMatchupsCard } from "../components/TypeMatchupsCard";
 import { EncounterLocations } from "../components/EncounterLocations";
+import { SpeciesInfoCard } from "../components/SpeciesInfoCard";
 
 export function PokemonDetails() {
   const { name } = useParams<{ name: string }>();
@@ -45,6 +46,7 @@ export function PokemonDetails() {
             <PokemonDexEntry pokemon={pokemon} />
           </div>
           <TypeMatchupsCard matchups={pokemon.typeMatchups} />
+          <SpeciesInfoCard pokemon={pokemon} />
           <PokemonSkills abilities={pokemon.abilities} moves={pokemon.moves} />
           <EvolutionChain stages={pokemon.evolutionStages} />
           {/* key: ao trocar de Pokémon a aba de jogo escolhida volta ao padrão */}

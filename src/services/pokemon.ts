@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { computeTypeMatchups, type TypeMatchups } from '../utils/typeEffectiveness';
 import { formatPlace, groupEncounters, type EncounterRow, type GameEncounters } from '../utils/encounters';
 import { describeEvolutions, type EvolutionCondition } from '../utils/evolution';
+import type { SpeciesInfo } from '../utils/speciesInfo';
 
 const pokeApiGraphQLSchema = z.object({
     data: z.object({
@@ -62,7 +63,21 @@ const pokeApiDetailedGraphQLSchema = z.object({
                 name: z.string(),
                 height: z.number(),
                 weight: z.number(),
+                base_experience: z.number().nullable(),
                 pokemon_v2_pokemonspecy: z.object({
+                    gender_rate: z.number(),
+                    capture_rate: z.number(),
+                    base_happiness: z.number().nullable(),
+                    hatch_counter: z.number().nullable(),
+                    is_legendary: z.boolean(),
+                    is_mythical: z.boolean(),
+                    is_baby: z.boolean(),
+                    pokemon_v2_growthrate: nameSchema,
+                    pokemon_v2_pokemonhabitat: nameSchema,
+                    pokemon_v2_pokemonspeciesnames: z.array(z.object({ genus: z.string() })),
+                    pokemon_v2_pokemonegggroups: z.array(
+                        z.object({ pokemon_v2_egggroup: nameSchema })
+                    ),
                     pokemon_v2_pokemonspeciesflavortexts: z.array(
                         z.object({
                             flavor_text: z.string()
@@ -75,6 +90,7 @@ const pokeApiDetailedGraphQLSchema = z.object({
                 pokemon_v2_pokemonstats: z.array(
                     z.object({
                         base_stat: z.number(),
+                        effort: z.number(),
                         pokemon_v2_stat: z.object({
                             name: z.string()
                         })
@@ -213,6 +229,9 @@ export interface PokemonDetailedData extends PokemonSimpleData {
     // Cada posição é um estágio: [base], [1ª evolução], [2ª evolução]
     evolutionStages: EvolutionNode[][];
     typeMatchups: TypeMatchups;
+    species: SpeciesInfo | null;
+    baseExperience: number | null;
+    evYield: { name: string; value: number }[]; // EVs dados ao ser derrotado
     abilities: { name: string; isHidden: boolean }[];
     moves: { name: string; type: string; power: number | null; accuracy: number | null; pp: number | null; level: number }[];
 }
@@ -263,7 +282,19 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
           name
           height
           weight
+          base_experience
           pokemon_v2_pokemonspecy {
+            gender_rate
+            capture_rate
+            base_happiness
+            hatch_counter
+            is_legendary
+            is_mythical
+            is_baby
+            pokemon_v2_growthrate { name }
+            pokemon_v2_pokemonhabitat { name }
+            pokemon_v2_pokemonspeciesnames(where: {language_id: {_eq: 9}}) { genus }
+            pokemon_v2_pokemonegggroups { pokemon_v2_egggroup { name } }
             pokemon_v2_pokemonspeciesflavortexts(where: {language_id: {_eq: 9}}, order_by: {version_id: desc}, limit: 1) {
               flavor_text
             }
@@ -297,6 +328,7 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
           }
           pokemon_v2_pokemonstats {
             base_stat
+            effort
             pokemon_v2_stat {
               name
             }
@@ -354,6 +386,7 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
     }
 
     const data = validResponse.data.pokemon_v2_pokemon[0];
+    const specy = data.pokemon_v2_pokemonspecy;
 
     const flavorTexts = data.pokemon_v2_pokemonspecy?.pokemon_v2_pokemonspeciesflavortexts || [];
     const description = flavorTexts.length > 0 
@@ -388,6 +421,23 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
         description,
         evolutionStages,
         typeMatchups,
+        species: specy && {
+            genus: specy.pokemon_v2_pokemonspeciesnames[0]?.genus ?? null,
+            genderRate: specy.gender_rate,
+            captureRate: specy.capture_rate,
+            baseHappiness: specy.base_happiness,
+            hatchCounter: specy.hatch_counter,
+            growthRate: specy.pokemon_v2_growthrate?.name ?? null,
+            habitat: specy.pokemon_v2_pokemonhabitat?.name ?? null,
+            eggGroups: specy.pokemon_v2_pokemonegggroups.flatMap((g) => g.pokemon_v2_egggroup?.name ?? []),
+            isLegendary: specy.is_legendary,
+            isMythical: specy.is_mythical,
+            isBaby: specy.is_baby
+        },
+        baseExperience: data.base_experience,
+        evYield: data.pokemon_v2_pokemonstats
+            .filter((s) => s.effort > 0)
+            .map((s) => ({ name: s.pokemon_v2_stat.name, value: s.effort })),
         abilities: data.pokemon_v2_pokemonabilities.map((a) => ({
             name: a.pokemon_v2_ability.name,
             isHidden: a.is_hidden
