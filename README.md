@@ -1,77 +1,45 @@
-# React + TypeScript + Vite
+# Pokédex
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Pokédex em React com os 1025 Pokémon da [PokéAPI](https://pokeapi.co/), publicada em
+**https://heitorlopes-dev.github.io/pokeApi/**.
 
-Currently, two official plugins are available:
+- **Lista:** busca por nome ou número, filtro por tipo e paginação. Os filtros ficam na URL
+  (`/pokeApi/?q=char&tipo=fire&pag=2`), então o link pode ser compartilhado e o "voltar" do
+  detalhe devolve a lista como estava.
+- **Detalhe:** arte oficial, descrição da Pokédex, peso, altura, base stats, fraquezas e
+  resistências por tipo, habilidades, golpes aprendidos por nível e cadeia de evolução.
+  Clicar numa habilidade ou golpe abre a descrição (em inglês: a PokéAPI não tem esses
+  textos em português).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
 
-## React Compiler
+React 19 + TypeScript + Vite 8 (com React Compiler), Tailwind CSS 3, TanStack Query,
+React Router 7 e Zod. Os dados vêm do GraphQL da PokéAPI (`beta.pokeapi.co/graphql/v1beta`)
+e cada resposta é validada com Zod.
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## Comandos
 
-Note: This will impact Vite dev & build performances.
+Usa [Bun](https://bun.sh/).
 
-## Expanding the ESLint configuration
+| Comando | O que faz |
+| --- | --- |
+| `bun install` | Instala as dependências |
+| `bun run dev` | Servidor local em http://localhost:5173/pokeApi/ |
+| `bun test` | Testes (`src/**/*.test.ts`) |
+| `bun run lint` | ESLint |
+| `bun run build` | Checa os tipos (`tsc -b`, inclusive os testes) e gera o `dist/` |
+| `bun run deploy` | Build e publicação no GitHub Pages (branch `gh-pages`) |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Estrutura
 
 ```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+src/
+  pages/       Home (lista) e PokemonDetails (detalhe)
+  components/  cards, diálogo de descrição, paginação, esqueletos de carregamento
+  services/    chamadas à PokéAPI (GraphQL + Zod)
+  hooks/       hooks do TanStack Query
+  utils/       cores dos tipos, filtros da URL, cálculo de fraquezas e resistências
 ```
+
+As regras puras (cadeia de evolução, fraquezas e resistências) têm testes em `*.test.ts`
+ao lado do código.
