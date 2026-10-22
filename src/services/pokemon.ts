@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { computeTypeMatchups, type TypeMatchups } from '../utils/typeEffectiveness';
 import { formatPlace, groupEncounters, type EncounterRow, type GameEncounters } from '../utils/encounters';
 import { describeEvolutions, type EvolutionCondition } from '../utils/evolution';
-import type { SpeciesInfo } from '../utils/speciesInfo';
+import type { EvYieldEntry, SpeciesInfo } from '../utils/speciesInfo';
 import { titleCase } from '../utils/text';
 
 const pokeApiGraphQLSchema = z.object({
@@ -232,7 +232,7 @@ export interface PokemonDetailedData extends PokemonSimpleData {
     typeMatchups: TypeMatchups;
     species: SpeciesInfo | null;
     baseExperience: number | null;
-    evYield: { name: string; value: number }[]; // EVs dados ao ser derrotado
+    evYield: EvYieldEntry[]; // EVs dados ao ser derrotado
     abilities: { name: string; isHidden: boolean }[];
     moves: { name: string; type: string; power: number | null; accuracy: number | null; pp: number | null; level: number }[];
 }

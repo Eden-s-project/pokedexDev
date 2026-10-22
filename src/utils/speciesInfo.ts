@@ -26,16 +26,14 @@ export function genderLabel(genderRate: number): string {
 }
 
 // Chance de captura com Poké Ball, HP cheio e sem status (fórmula das gerações 3 e 4):
-// a = ⌊taxa / 3⌋ e a chance ≈ a / 255 (as 4 "balançadas" da bola dão quase exatamente isso)
+// a = ⌊taxa / 3⌋ e a chance ≈ a / 255 (as 4 "balançadas" da bola dão quase exatamente isso).
+// A taxa vai de 3 a 255, então a chance fica entre 0,4% e 33,3%.
 export function catchChance(captureRate: number): number {
-    const a = Math.floor(captureRate / 3);
-    return Math.min(100, (a / 255) * 100);
+    return (Math.floor(captureRate / 3) / 255) * 100;
 }
 
 export function catchChanceLabel(captureRate: number): string {
-    const chance = catchChance(captureRate);
-    const shown = chance > 0 && chance < 0.1 ? '< 0,1%' : percent(Math.round(chance * 10) / 10);
-    return `${captureRate} (≈ ${shown} com Poké Ball e HP cheio)`;
+    return `${captureRate} (≈ ${percent(Math.round(catchChance(captureRate) * 10) / 10)} com Poké Ball e HP cheio)`;
 }
 
 const growthRateLabels: Record<string, string> = {
@@ -92,7 +90,13 @@ export const growthRateLabel = (slug: string) => growthRateLabels[slug] ?? title
 export const habitatLabel = (slug: string) => habitatLabels[slug] ?? titleCase(slug);
 export const eggGroupLabel = (slug: string) => eggGroupLabels[slug] ?? titleCase(slug);
 
-// EVs que o Pokémon dá ao ser derrotado: "+3 Ataque Esp." ou "+1 HP, +1 Ataque"
-export function evYieldLabel(evYield: { name: string; value: number }[]): string {
+// Um EV que o Pokémon dá ao ser derrotado. Fonte única do tipo: PokemonDetailedData usa este
+export interface EvYieldEntry {
+    name: string;  // slug do stat: special-attack...
+    value: number;
+}
+
+// "+3 Ataque Esp." ou "+1 HP, +1 Ataque"
+export function evYieldLabel(evYield: EvYieldEntry[]): string {
     return evYield.map((ev) => `+${ev.value} ${statLabels[ev.name] ?? titleCase(ev.name)}`).join(', ');
 }
