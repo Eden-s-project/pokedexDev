@@ -25,7 +25,7 @@ export const PokemonSkills = ({ abilities, moves }: PokemonSkillsProps) => {
                             >
                                 <div className="flex justify-between items-center gap-2">
                                     <span className="font-bold uppercase tracking-wider text-slate-900 break-words">
-                                        {ability.name.replace('-', ' ')}
+                                        {ability.name.replaceAll('-', ' ')}
                                     </span>
                                     {ability.isHidden && (
                                         <span className="text-[10px] sm:text-xs font-black bg-slate-900 text-yellow-400 px-2 py-1 rounded-full uppercase tracking-widest shrink-0">
@@ -69,8 +69,8 @@ export const PokemonSkills = ({ abilities, moves }: PokemonSkillsProps) => {
                                     <span className="font-retro text-slate-600">
                                         {move.level}
                                     </span>
-                                    <span className="uppercase tracking-wider truncate" title={move.name.replace('-', ' ')}>
-                                        {move.name.replace('-', ' ')}
+                                    <span className="uppercase tracking-wider truncate" title={move.name.replaceAll('-', ' ')}>
+                                        {move.name.replaceAll('-', ' ')}
                                     </span>
 
                                     <div className="flex justify-center">
