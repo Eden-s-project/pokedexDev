@@ -35,7 +35,7 @@ export function EvolutionChain({ stages }: EvolutionChainProps) {
     }
 
     return (
-        <div className="mt-12 bg-white p-8 rounded-xl shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] border-4 border-slate-900 w-full max-w-5xl">
+        <div className="bg-white p-8 rounded-xl shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] border-4 border-slate-900 w-full max-w-5xl">
             <h3 className="text-xl font-bold text-slate-800 mb-6 text-center uppercase tracking-widest font-retro border-b-4 border-slate-900 pb-4">
                 Evolution Chain
             </h3>

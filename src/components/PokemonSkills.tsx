@@ -17,7 +17,7 @@ export function PokemonSkills({ abilities, moves }: PokemonSkillsProps) {
     const [selectedSkill, setSelectedSkill] = useState<SelectedSkill | null>(null);
 
     return (
-        <div className="mt-8 bg-white p-4 sm:p-6 md:p-10 rounded-xl shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] border-4 border-slate-900 w-full max-w-5xl">
+        <div className="bg-white p-4 sm:p-6 md:p-10 rounded-xl shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] border-4 border-slate-900 w-full max-w-5xl">
             <p className="text-slate-500 text-sm font-bold mb-6">
                 Toque em uma habilidade ou golpe para ver a descrição.
             </p>
