@@ -6,7 +6,7 @@ interface PokemonSkillsProps {
     moves: { name: string; type: string; power: number | null; accuracy: number | null; pp: number | null; level: number }[];
 }
 
-export const PokemonSkills = ({ abilities, moves }: PokemonSkillsProps) => {
+export function PokemonSkills({ abilities, moves }: PokemonSkillsProps) {
     return (
         <div className="mt-8 bg-white p-6 md:p-10 rounded-xl shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] border-4 border-slate-900 w-full max-w-5xl">
             <div className="flex flex-col lg:flex-row gap-10">
@@ -104,4 +104,4 @@ export const PokemonSkills = ({ abilities, moves }: PokemonSkillsProps) => {
             </div>
         </div>
     );
-};
+}

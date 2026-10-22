@@ -6,7 +6,7 @@ interface PokemonDexEntryProps {
   pokemon: PokemonDetailedData;
 }
 
-export const PokemonDexEntry = ({ pokemon }: PokemonDexEntryProps) => {
+export function PokemonDexEntry({ pokemon }: PokemonDexEntryProps) {
   return (
     <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-slate-100">
       <div className="mb-8 relative">
@@ -40,4 +40,4 @@ export const PokemonDexEntry = ({ pokemon }: PokemonDexEntryProps) => {
       <BaseStats stats={pokemon.stats} />
     </div>
   );
-};
+}
