@@ -155,13 +155,17 @@ export interface PokemonDetailedData extends PokemonSimpleData {
 
 // --------------------------------------------------------
 // Nova função para buscar os dados completos de 1 Pokémon
+// Aceita o nome ("pikachu") ou o número ("25") vindo da URL
 // --------------------------------------------------------
 export async function fetchPokemonByName(name: string): Promise<PokemonDetailedData> {
-    const safeName = name.toLowerCase();
+    // O valor vai como variável do GraphQL, nunca colado no texto da query
+    const where = /^\d+$/.test(name)
+        ? { id: { _eq: Number(name) } }
+        : { name: { _eq: name.toLowerCase() } };
 
     const query = `
-      query {
-        pokemon_v2_pokemon(where: {name: {_eq: "${safeName}"}}) {
+      query ($where: pokemon_v2_pokemon_bool_exp!) {
+        pokemon_v2_pokemon(where: $where) {
           id
           name
           height
@@ -216,7 +220,7 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, variables: { where } }),
     });
 
     if (!response.ok) {
