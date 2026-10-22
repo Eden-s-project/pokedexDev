@@ -301,3 +301,146 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
           .sort((a, b) => a.level - b.level)
     };
 }
+
+// --------------------------------------------------------
+// Descrição de 1 golpe ou habilidade (aberta no diálogo)
+// A PokéAPI não tem esses textos em pt-BR, então vêm em inglês (language_id 9)
+// --------------------------------------------------------
+const effectTextSchema = z.object({ short_effect: z.string() });
+const flavorTextSchema = z.object({ flavor_text: z.string() });
+
+const moveDescriptionSchema = z.object({
+    data: z.object({
+        pokemon_v2_move: z.array(
+            z.object({
+                move_effect_chance: z.number().nullable(),
+                pokemon_v2_movedamageclass: z.object({ name: z.string() }).nullable(),
+                pokemon_v2_moveeffect: z.object({
+                    pokemon_v2_moveeffecteffecttexts: z.array(effectTextSchema)
+                }).nullable(),
+                pokemon_v2_moveflavortexts: z.array(flavorTextSchema)
+            })
+        )
+    })
+});
+
+const abilityDescriptionSchema = z.object({
+    data: z.object({
+        pokemon_v2_ability: z.array(
+            z.object({
+                pokemon_v2_abilityeffecttexts: z.array(effectTextSchema),
+                pokemon_v2_abilityflavortexts: z.array(flavorTextSchema)
+            })
+        )
+    })
+});
+
+export interface SkillRef {
+    kind: 'move' | 'ability';
+    name: string;
+}
+
+export interface SkillDescription {
+    flavorText: string | null;
+    effect: string | null;
+    damageClass: string | null; // só golpes: physical, special ou status
+}
+
+// Os textos da API vêm com quebras de linha do cartucho e espaços duplos
+function cleanText(text: string): string {
+    return text.replace(/[\n\f\r]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+async function postGraphQL(query: string, variables: Record<string, unknown>): Promise<unknown> {
+    const response = await fetch('https://beta.pokeapi.co/graphql/v1beta', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query, variables }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Falha ao buscar a descrição!');
+    }
+
+    return response.json();
+}
+
+async function fetchMoveDescription(name: string): Promise<SkillDescription> {
+    // Pega o texto do jogo mais recente (maior version_group_id)
+    const query = `
+      query ($name: String!) {
+        pokemon_v2_move(where: {name: {_eq: $name}}) {
+          move_effect_chance
+          pokemon_v2_movedamageclass {
+            name
+          }
+          pokemon_v2_moveeffect {
+            pokemon_v2_moveeffecteffecttexts(where: {language_id: {_eq: 9}}) {
+              short_effect
+            }
+          }
+          pokemon_v2_moveflavortexts(where: {language_id: {_eq: 9}}, order_by: {version_group_id: desc}, limit: 1) {
+            flavor_text
+          }
+        }
+      }
+    `;
+
+    const json = await postGraphQL(query, { name });
+    const move = moveDescriptionSchema.parse(json).data.pokemon_v2_move[0];
+
+    if (!move) {
+        throw new Error('Golpe não encontrado');
+    }
+
+    const shortEffect = move.pokemon_v2_moveeffect?.pokemon_v2_moveeffecteffecttexts[0]?.short_effect;
+    const flavorText = move.pokemon_v2_moveflavortexts[0]?.flavor_text;
+
+    return {
+        flavorText: flavorText ? cleanText(flavorText) : null,
+        // "$effect_chance% chance to paralyze" -> "10% chance to paralyze"
+        effect: shortEffect
+            ? cleanText(shortEffect.replaceAll('$effect_chance', String(move.move_effect_chance ?? '')))
+            : null,
+        damageClass: move.pokemon_v2_movedamageclass?.name ?? null
+    };
+}
+
+async function fetchAbilityDescription(name: string): Promise<SkillDescription> {
+    const query = `
+      query ($name: String!) {
+        pokemon_v2_ability(where: {name: {_eq: $name}}) {
+          pokemon_v2_abilityeffecttexts(where: {language_id: {_eq: 9}}) {
+            short_effect
+          }
+          pokemon_v2_abilityflavortexts(where: {language_id: {_eq: 9}}, order_by: {version_group_id: desc}, limit: 1) {
+            flavor_text
+          }
+        }
+      }
+    `;
+
+    const json = await postGraphQL(query, { name });
+    const ability = abilityDescriptionSchema.parse(json).data.pokemon_v2_ability[0];
+
+    if (!ability) {
+        throw new Error('Habilidade não encontrada');
+    }
+
+    const shortEffect = ability.pokemon_v2_abilityeffecttexts[0]?.short_effect;
+    const flavorText = ability.pokemon_v2_abilityflavortexts[0]?.flavor_text;
+
+    return {
+        flavorText: flavorText ? cleanText(flavorText) : null,
+        effect: shortEffect ? cleanText(shortEffect) : null,
+        damageClass: null
+    };
+}
+
+export function fetchSkillDescription(skill: SkillRef): Promise<SkillDescription> {
+    return skill.kind === 'move'
+        ? fetchMoveDescription(skill.name)
+        : fetchAbilityDescription(skill.name);
+}

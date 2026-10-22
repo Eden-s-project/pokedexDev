@@ -1,5 +1,7 @@
-
+import { useState } from 'react';
 import { typeColors } from '../utils/constants';
+import type { PokemonDetailedData } from '../services/pokemon';
+import { SkillDialog, type SelectedSkill } from './SkillDialog';
 
 // Cabeçalho e linhas usam o mesmo grid, senão as colunas desalinham.
 // No celular as colunas fixas são estreitas e a ACC fica escondida para sobrar
@@ -7,13 +9,19 @@ import { typeColors } from '../utils/constants';
 const movesGrid = 'grid grid-cols-[28px_minmax(0,1fr)_64px_28px_24px] sm:grid-cols-[60px_1fr_100px_60px_60px_60px] gap-1.5 sm:gap-2 p-2 sm:p-3';
 
 interface PokemonSkillsProps {
-    abilities: { name: string; isHidden: boolean }[];
-    moves: { name: string; type: string; power: number | null; accuracy: number | null; pp: number | null; level: number }[];
+    abilities: PokemonDetailedData['abilities'];
+    moves: PokemonDetailedData['moves'];
 }
 
 export function PokemonSkills({ abilities, moves }: PokemonSkillsProps) {
+    const [selectedSkill, setSelectedSkill] = useState<SelectedSkill | null>(null);
+
     return (
         <div className="mt-8 bg-white p-4 sm:p-6 md:p-10 rounded-xl shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] border-4 border-slate-900 w-full max-w-5xl">
+            <p className="text-slate-500 text-sm font-bold mb-6">
+                Toque em uma habilidade ou golpe para ver a descrição.
+            </p>
+
             <div className="flex flex-col lg:flex-row gap-10">
 
                 {/* Lado Esquerdo: Abilities */}
@@ -24,11 +32,13 @@ export function PokemonSkills({ abilities, moves }: PokemonSkillsProps) {
                     </h3>
                     <div className="flex flex-col gap-4">
                         {abilities.map((ability, index) => (
-                            <div
+                            <button
+                                type="button"
                                 key={index}
-                                className={`p-4 border-4 border-slate-900 rounded-lg shadow-[4px_4px_0_0_rgba(0,0,0,1)] ${ability.isHidden ? 'bg-yellow-400' : 'bg-slate-200'}`}
+                                onClick={() => setSelectedSkill({ kind: 'ability', data: ability })}
+                                className={`w-full text-left p-4 border-4 border-slate-900 rounded-lg shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_rgba(0,0,0,1)] transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500 ${ability.isHidden ? 'bg-yellow-400' : 'bg-slate-200'}`}
                             >
-                                <div className="flex justify-between items-center gap-2">
+                                <span className="flex justify-between items-center gap-2">
                                     <span className="font-bold uppercase tracking-wider text-slate-900 break-words">
                                         {ability.name.replaceAll('-', ' ')}
                                     </span>
@@ -37,8 +47,8 @@ export function PokemonSkills({ abilities, moves }: PokemonSkillsProps) {
                                             Secreta
                                         </span>
                                     )}
-                                </div>
-                            </div>
+                                </span>
+                            </button>
                         ))}
                         {abilities.length === 0 && (
                             <p className="text-slate-500 font-bold italic">Nenhuma habilidade encontrada.</p>
@@ -67,9 +77,11 @@ export function PokemonSkills({ abilities, moves }: PokemonSkillsProps) {
                         {/* Table Body */}
                         <div className="max-h-80 overflow-y-auto">
                             {moves.map((move, index) => (
-                                <div
+                                <button
+                                    type="button"
                                     key={index}
-                                    className={`${movesGrid} border-b-4 border-slate-900 last:border-b-0 items-center hover:bg-slate-200 transition-colors text-xs sm:text-sm font-bold text-slate-800`}
+                                    onClick={() => setSelectedSkill({ kind: 'move', data: move })}
+                                    className={`${movesGrid} w-full text-left border-b-4 border-slate-900 last:border-b-0 items-center hover:bg-slate-200 transition-colors text-xs sm:text-sm font-bold text-slate-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-red-500`}
                                 >
                                     <span className="font-retro text-slate-600">
                                         {move.level}
@@ -78,13 +90,13 @@ export function PokemonSkills({ abilities, moves }: PokemonSkillsProps) {
                                         {move.name.replaceAll('-', ' ')}
                                     </span>
 
-                                    <div className="flex justify-center">
+                                    <span className="flex justify-center">
                                         <span
                                             className={`${typeColors[move.type.toLowerCase()] || 'bg-gray-400 text-gray-800'} px-1 sm:px-2 py-1 rounded text-[10px] sm:text-xs uppercase tracking-normal sm:tracking-widest border-2 border-slate-900 text-center shadow-[2px_2px_0_0_rgba(0,0,0,1)] w-full block`}
                                         >
                                             {move.type}
                                         </span>
-                                    </div>
+                                    </span>
 
                                     <span className="text-center font-retro text-slate-600">
                                         {move.power || '--'}
@@ -95,7 +107,7 @@ export function PokemonSkills({ abilities, moves }: PokemonSkillsProps) {
                                     <span className="text-center font-retro text-slate-900">
                                         {move.pp || '--'}
                                     </span>
-                                </div>
+                                </button>
                             ))}
                             {moves.length === 0 && (
                                 <div className="p-6 text-center text-slate-500 font-bold italic">
@@ -107,6 +119,8 @@ export function PokemonSkills({ abilities, moves }: PokemonSkillsProps) {
                 </div>
 
             </div>
+
+            <SkillDialog skill={selectedSkill} onClose={() => setSelectedSkill(null)} />
         </div>
     );
 }
