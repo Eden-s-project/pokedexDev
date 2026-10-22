@@ -1,10 +1,10 @@
 # Pokédex
 
 Pokédex em React com os 1025 Pokémon da [PokéAPI](https://pokeapi.co/), publicada em
-**https://heitorlopes-dev.github.io/pokeApi/**.
+**https://eden-s-project.github.io/pokedexDev/**.
 
 - **Lista:** busca por nome ou número, filtro por tipo e paginação. Os filtros ficam na URL
-  (`/pokeApi/?q=char&tipo=fire&pag=2`), então o link pode ser compartilhado e o "voltar" do
+  (`/pokedexDev/?q=char&tipo=fire&pag=2`), então o link pode ser compartilhado e o "voltar" do
   detalhe devolve a lista como estava.
 - **Detalhe:** arte oficial, descrição da Pokédex, peso, altura, base stats, fraquezas e
   resistências por tipo, habilidades, golpes aprendidos por nível e cadeia de evolução.
@@ -24,7 +24,7 @@ Usa [Bun](https://bun.sh/).
 | Comando | O que faz |
 | --- | --- |
 | `bun install` | Instala as dependências |
-| `bun run dev` | Servidor local em http://localhost:5173/pokeApi/ |
+| `bun run dev` | Servidor local em http://localhost:5173/pokedexDev/ |
 | `bun test` | Testes (`src/**/*.test.ts`) |
 | `bun run lint` | ESLint |
 | `bun run build` | Checa os tipos (`tsc -b`, inclusive os testes) e gera o `dist/` |
