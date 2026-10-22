@@ -69,4 +69,33 @@ describe('describeEvolutions', () => {
             evo({ minHappiness: 160, knownMoveType: 'fairy' }),
         ])).toBe('Subir de nível · afeição alta, sabendo golpe tipo Fairy ou Subir de nível · amizade alta, sabendo golpe tipo Fairy');
     });
+
+    // Casos da geração 9 achados no code review, com os dados reais da API
+    test('Palafin: gatilho "other" com nível mostra o nível', () => {
+        expect(describeEvolutions([evo({ trigger: 'other', minLevel: 38 })])).toBe('Nv. 38');
+    });
+
+    test('gatilho "other" sem nível vira "Condição especial"', () => {
+        expect(describeEvolutions([evo({ trigger: 'other' })])).toBe('Condição especial');
+    });
+
+    test('Ursaluna: lua cheia não some', () => {
+        expect(describeEvolutions([evo({ trigger: 'use-item', item: 'peat-block', timeOfDay: 'full-moon' })]))
+            .toBe('Peat Block · em noite de lua cheia');
+    });
+
+    test('Magnezone: "Subir de nível" solto some quando a mesma condição tem locais', () => {
+        expect(describeEvolutions([
+            evo({ location: 'mt-coronet' }),
+            evo({ location: 'chargestone-cave' }),
+            evo({ location: 'kalos-route-13' }),
+            evo({}),
+            evo({ trigger: 'use-item', item: 'thunder-stone' }),
+        ])).toBe('Thunder Stone ou Subir de nível em Mt Coronet, Chargestone Cave ou Kalos Route 13');
+    });
+
+    test('valores desconhecidos aparecem formatados em vez de sumir', () => {
+        expect(describeEvolutions([evo({ trigger: 'new-trigger', timeOfDay: 'eclipse' })]))
+            .toBe('New Trigger · Eclipse');
+    });
 });
