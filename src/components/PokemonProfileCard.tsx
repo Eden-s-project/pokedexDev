@@ -6,6 +6,11 @@ interface PokemonProfileCardProps {
   pokemon: PokemonDetailedData;
 }
 
+// Os gritos da PokéAPI são .ogg; Safari antigo não toca esse formato
+const canPlayOgg = typeof Audio !== 'undefined' && new Audio().canPlayType('audio/ogg; codecs="vorbis"') !== '';
+
+const cryLabels = { idle: '🔊 Grito', playing: '🔊 Tocando…', error: 'Som indisponível' };
+
 export function PokemonProfileCard({ pokemon }: PokemonProfileCardProps) {
   const badges = [
     pokemon.species?.isLegendary && { label: 'Lendário', className: 'bg-yellow-400 text-slate-900' },
@@ -17,6 +22,15 @@ export function PokemonProfileCard({ pokemon }: PokemonProfileCardProps) {
   // Alguma forma pode não ter arte shiny: volta para a normal e desliga o botão
   const [shinyMissing, setShinyMissing] = useState(false);
   const shinyImage = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${pokemon.id}.png`;
+
+  const [cryState, setCryState] = useState<keyof typeof cryLabels>('idle');
+  const playCry = () => {
+    const audio = new Audio(`https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${pokemon.id}.ogg`);
+    audio.volume = 0.5;
+    audio.addEventListener('ended', () => setCryState('idle'));
+    setCryState('playing');
+    audio.play().catch(() => setCryState('error'));
+  };
 
   return (
     <div className="md:w-1/2 p-8 md:p-12 flex flex-col items-center bg-slate-800 border-b-4 md:border-b-0 md:border-r-4 border-slate-900 relative">
@@ -67,6 +81,15 @@ export function PokemonProfileCard({ pokemon }: PokemonProfileCardProps) {
           className={`px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest border-2 border-slate-900 shadow-[2px_2px_0_0_rgba(0,0,0,1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500 ${shiny ? 'bg-yellow-400 text-slate-900' : 'bg-slate-200 text-slate-900 hover:bg-white'}`}
         >
           ✨ Shiny
+        </button>
+        <button
+          type="button"
+          onClick={playCry}
+          disabled={!canPlayOgg || cryState !== 'idle'}
+          title={canPlayOgg ? undefined : 'Seu navegador não toca áudio OGG'}
+          className="px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest border-2 border-slate-900 shadow-[2px_2px_0_0_rgba(0,0,0,1)] bg-slate-200 text-slate-900 hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-500"
+        >
+          {cryLabels[cryState]}
         </button>
       </div>
 
