@@ -30,9 +30,11 @@ export function PokemonCard({ name, number, image, types }: PokemonCardProps) {
 
             {/* O React só desenha isso se a variável 'types' existir e tiver itens! */}
             {types && types.length > 0 && (
-                <div className="flex gap-2 mt-2">
+                // flex-wrap + pílula compacta no celular: em 360px o miolo do card tem 112px e
+                // "NORMAL FLYING" precisava de ~146px, passando da borda do card
+                <div className="flex flex-wrap justify-center gap-1 sm:gap-2 mt-2">
                     {types.map((type) => (
-                        <p key={type} className={`${typeColors[type.toLowerCase()] || 'bg-gray-200 text-gray-800'} px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border-2 border-slate-900`}>
+                        <p key={type} className={`${typeColors[type.toLowerCase()] || 'bg-gray-200 text-gray-800'} px-2 sm:px-3 py-1 rounded-full text-xs font-bold uppercase tracking-normal sm:tracking-wide border-2 border-slate-900`}>
                             {type}
                         </p>
                     ))}
