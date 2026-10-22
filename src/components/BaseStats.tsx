@@ -17,7 +17,8 @@ export function BaseStats({ stats }: BaseStatsProps) {
                         'defense': 'DEF',
                         'special-attack': 'SpA',
                         'special-defense': 'SpD',
-                        'speed': 'SPD'
+                        // "Spe" e não "SPD": o rótulo é exibido em maiúsculas e colidiria com SpD
+                        'speed': 'Spe'
                     };
                     const label = statNameMap[stat.name] || stat.name.toUpperCase();
 
