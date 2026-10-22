@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchPokemonByName } from "../services/pokemon";
@@ -17,6 +18,11 @@ export function PokemonDetails() {
     queryFn: () => fetchPokemonByName(name as string),
     enabled: !!name,
   });
+
+  // Trocar de Pokémon pela cadeia de evolução mantinha a página rolada lá embaixo
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [name]);
 
   return (
     <div className="min-h-screen bg-red-600 flex flex-col items-center pt-10 pb-20 px-4">
