@@ -10,7 +10,8 @@ function MatchupBadge({ matchup }: { matchup: Matchup }) {
     return (
         <span className={`${typeColors[matchup.type] || 'bg-gray-400 text-gray-800'} inline-flex items-center gap-2 pl-3 pr-1 py-1 rounded-full text-xs font-bold uppercase tracking-widest border-2 border-slate-900 shadow-[2px_2px_0_0_rgba(0,0,0,1)]`}>
             {matchup.type}
-            <span className="bg-slate-900 text-white font-retro text-sm px-2 rounded-full normal-case tracking-normal">
+            {/* Fonte normal e não a pixelada: nela "½"/"¼" ficavam espremidos e o "0" saía cortado (Ø) */}
+            <span className="bg-slate-900 text-white font-sans font-black text-sm px-2 rounded-full normal-case tracking-normal">
                 {formatMultiplier(matchup.multiplier)}
             </span>
         </span>
