@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { SearchBar } from "../components/SearchBar";
 import { PokemonCard } from '../components/PokemonCard';
@@ -8,12 +9,22 @@ import { Pagination } from "../components/Pagination";
 import { FloatingScrollButtons } from "../components/FloatingScrollButtons";
 import { fetchAllPokemon } from "../services/pokemon";
 import { typeColors } from "../utils/constants";
+import { readListFilters, writeListFilters, type ListFilters } from "../utils/listFilters";
 
 export function Home() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
+  // Busca, tipo e página moram na URL: ao voltar do detalhe a lista volta como estava
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = readListFilters(searchParams);
+  const { search: searchTerm, type: selectedType, perPage: itemsPerPage } = filters;
+
+  // replace: digitar e paginar não empilham entradas no histórico do navegador.
+  // Parte da URL atual (prev), não do render, para teclas seguidas não usarem filtros velhos
+  const updateFilters = (patch: Partial<ListFilters>) =>
+    setSearchParams((prev) => writeListFilters({ ...readListFilters(prev), ...patch }), { replace: true });
+
+  // O campo de busca tem estado próprio: a URL só atualiza dentro de uma transição do
+  // React Router e, lido direto dela, o campo perdia letras digitadas muito rápido
+  const [searchInput, setSearchInput] = useState(searchTerm);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['pokemons-list-v3'],
@@ -28,6 +39,8 @@ export function Home() {
   });
 
   const totalPages = filteredPokemons ? Math.ceil(filteredPokemons.length / itemsPerPage) : 0;
+  // Um link com ?pag=99 mostra a última página em vez de uma lista vazia
+  const currentPage = Math.min(filters.page, Math.max(totalPages, 1));
 
   const currentPokemons = filteredPokemons?.slice(
     (currentPage - 1) * itemsPerPage,
@@ -44,19 +57,16 @@ export function Home() {
       <div className="flex flex-col items-center justify-center gap-4 w-full max-w-4xl">
         <SearchBar
           placeholder="Procure por nome ou número..."
-          value={searchTerm}
+          value={searchInput}
           onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1);
+            setSearchInput(e.target.value);
+            updateFilters({ search: e.target.value, page: 1 });
           }}
         />
 
         <div className="flex gap-2 overflow-x-auto w-full pb-2 no-scrollbar px-2 snap-x">
           <button
-            onClick={() => {
-              setSelectedType('');
-              setCurrentPage(1);
-            }}
+            onClick={() => updateFilters({ type: '', page: 1 })}
             className={`px-4 py-2 rounded-full font-bold uppercase tracking-wide text-sm whitespace-nowrap transition-transform active:scale-95 snap-center ${
               selectedType === ''
                 ? 'bg-slate-900 text-white shadow-[0_4px_0_0_rgba(0,0,0,0.3)] border-2 border-slate-900'
@@ -71,10 +81,7 @@ export function Home() {
             return (
               <button
                 key={type}
-                onClick={() => {
-                  setSelectedType(type);
-                  setCurrentPage(1);
-                }}
+                onClick={() => updateFilters({ type, page: 1 })}
                 className={`px-4 py-2 rounded-full font-bold uppercase tracking-wide text-sm whitespace-nowrap transition-all active:scale-95 snap-center border-2 border-slate-900 ${
                   isSelected ? 'scale-105 shadow-[0_4px_0_0_rgba(0,0,0,0.5)] ring-2 ring-white ring-offset-2 ring-offset-red-600' : 'opacity-90 hover:opacity-100 hover:shadow-[0_2px_0_0_rgba(0,0,0,0.5)]'
                 } ${styleClasses}`}
@@ -117,11 +124,8 @@ export function Home() {
           currentPage={currentPage}
           totalPages={totalPages}
           itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={(items) => {
-            setItemsPerPage(items);
-            setCurrentPage(1);
-          }}
+          onPageChange={(page) => updateFilters({ page })}
+          onItemsPerPageChange={(items) => updateFilters({ perPage: items, page: 1 })}
         />
       )}
 

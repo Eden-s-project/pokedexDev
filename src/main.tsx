@@ -22,7 +22,9 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter basename="/pokeApi">
+      {/* BASE_URL vem do `base` do vite.config.ts ("/pokeApi/"). Com a barra final a lista
+          vira /pokeApi/?tipo=fire; sem ela vira /pokeApi?tipo=fire, que dá 404 ao recarregar */}
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <App />
       </BrowserRouter>
     </QueryClientProvider>

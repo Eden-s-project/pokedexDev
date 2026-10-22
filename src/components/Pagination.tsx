@@ -1,3 +1,5 @@
+import { itemsPerPageOptions } from '../utils/listFilters';
+
 interface PaginationProps {
     currentPage: number;
     totalPages: number;
@@ -45,11 +47,11 @@ export function Pagination({
                     onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
                     className="border-2 border-slate-700 rounded-md p-1 focus:outline-none focus:border-white bg-slate-800 text-white font-retro text-lg"
                 >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                    <option value={1025}>Todos (1025)</option>
+                    {itemsPerPageOptions.map((option) => (
+                        <option key={option} value={option}>
+                            {option === 1025 ? 'Todos (1025)' : option}
+                        </option>
+                    ))}
                 </select>
             </div>
         </div>

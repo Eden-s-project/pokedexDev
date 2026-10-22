@@ -9,8 +9,10 @@ interface EvolutionChainProps {
 function EvolutionCard({ evo }: { evo: EvolutionNode }) {
     return (
         // Link pelo número: o nome da espécie nem sempre é o nome do Pokémon (wormadam -> wormadam-plant)
+        // replace: igual ao Anterior/Próximo, um único "voltar" ainda cai na lista
         <Link
             to={`/pokemon/${evo.id}`}
+            replace
             className="flex flex-col items-center hover:translate-y-[-4px] transition-transform duration-200"
         >
             <div className="w-20 h-20 md:w-28 md:h-28 bg-slate-200 border-4 border-slate-900 rounded-full flex items-center justify-center mb-3 shadow-[4px_4px_0_0_rgba(0,0,0,1)] relative overflow-hidden">
