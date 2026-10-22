@@ -29,7 +29,7 @@ export function PokemonDetails() {
       {/* Navegação Topo */}
       <DetailsNavigation pokemon={pokemon} />
 
-      {isLoading && <div className="w-full flex justify-center mt-10"><SkeletonDetails /></div>}
+      {isLoading && <div className="w-full flex justify-center"><SkeletonDetails /></div>}
       {isError && <ErrorMessage />}
 
       {pokemon && !isLoading && !isError && (
