@@ -1,5 +1,9 @@
 import { itemsPerPageOptions } from '../utils/listFilters';
 
+// No celular os botões mostram só a seta; com "Anterior"/"Próximo" e o espaçamento
+// largo a linha passava da tela (402px numa tela de 390px)
+const pageButtonClass = 'px-4 sm:px-6 py-2 bg-slate-900 text-white font-bold uppercase tracking-widest border-4 border-slate-900 rounded-md disabled:bg-slate-400 disabled:border-slate-400 disabled:cursor-not-allowed hover:bg-slate-800 transition shadow-[4px_4px_0_0_rgba(255,255,255,1)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-[2px_2px_0_0_rgba(255,255,255,1)]';
+
 interface PaginationProps {
     currentPage: number;
     totalPages: number;
@@ -17,25 +21,29 @@ export function Pagination({
 }: PaginationProps) {
     return (
         <div className="flex flex-col items-center mt-10 gap-4">
-            <div className="flex justify-center items-center space-x-6">
+            <div className="flex justify-center items-center gap-3 sm:gap-6">
                 <button
                     onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
                     disabled={currentPage === 1}
-                    className="px-6 py-2 bg-slate-900 text-white font-bold uppercase tracking-widest border-4 border-slate-900 rounded-md disabled:bg-slate-400 disabled:border-slate-400 disabled:cursor-not-allowed hover:bg-slate-800 transition shadow-[4px_4px_0_0_rgba(255,255,255,1)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-[2px_2px_0_0_rgba(255,255,255,1)]"
+                    aria-label="Página anterior"
+                    className={pageButtonClass}
                 >
-                    Anterior
+                    <span aria-hidden="true" className="sm:hidden">&larr;</span>
+                    <span className="hidden sm:inline">Anterior</span>
                 </button>
 
-                <span className="text-white font-bold font-retro text-xl bg-slate-900 px-4 py-1 border-2 border-white rounded-md shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]">
+                <span className="whitespace-nowrap text-white font-bold font-retro text-lg sm:text-xl bg-slate-900 px-3 sm:px-4 py-1 border-2 border-white rounded-md shadow-[2px_2px_0_0_rgba(0,0,0,0.5)]">
                     Pág {currentPage} de {totalPages}
                 </span>
 
                 <button
                     onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className="px-6 py-2 bg-slate-900 text-white font-bold uppercase tracking-widest border-4 border-slate-900 rounded-md disabled:bg-slate-400 disabled:border-slate-400 disabled:cursor-not-allowed hover:bg-slate-800 transition shadow-[4px_4px_0_0_rgba(255,255,255,1)] active:translate-y-[2px] active:translate-x-[2px] active:shadow-[2px_2px_0_0_rgba(255,255,255,1)]"
+                    aria-label="Próxima página"
+                    className={pageButtonClass}
                 >
-                    Próximo
+                    <span aria-hidden="true" className="sm:hidden">&rarr;</span>
+                    <span className="hidden sm:inline">Próximo</span>
                 </button>
             </div>
 

@@ -106,7 +106,8 @@ export function SkillDialog({ skill, onClose }: SkillDialogProps) {
                                 ].map((stat) => (
                                     <div key={stat.label} className="bg-slate-800 rounded-lg border-2 border-slate-900 py-2">
                                         <dt className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{stat.label}</dt>
-                                        <dd className="text-white font-retro text-xl">{stat.value || '--'}</dd>
+                                        {/* ?? e não ||: nível 0 ("aprende ao evoluir") é um valor real */}
+                                        <dd className="text-white font-retro text-xl">{stat.value ?? '--'}</dd>
                                     </div>
                                 ))}
                             </dl>

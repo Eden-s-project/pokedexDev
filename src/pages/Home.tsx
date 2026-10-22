@@ -50,7 +50,9 @@ export function Home() {
   const availableTypes = Object.keys(typeColors);
 
   return (
-    <div className="min-h-screen bg-red-600 flex flex-col items-center pt-10 pb-20 px-4">
+    // pb-36 no celular: os botões flutuantes ↑/↓ ocupam os últimos 128px da tela e,
+    // com pb-20, cobriam a caixa "Mostrar" ao rolar até o fim
+    <div className="min-h-screen bg-red-600 flex flex-col items-center pt-10 pb-36 sm:pb-20 px-4">
       <h1 className="text-5xl sm:text-6xl font-black text-white mb-6 font-retro tracking-widest drop-shadow-[4px_4px_0_rgba(0,0,0,0.3)]">POKÉDEX</h1>
 
 
