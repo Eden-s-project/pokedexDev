@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { computeTypeMatchups, type TypeMatchups } from '../utils/typeEffectiveness';
 
 const pokeApiGraphQLSchema = z.object({
     data: z.object({
@@ -24,7 +25,7 @@ const evolutionSpeciesSchema = z.object({
     evolves_from_species_id: z.number().nullable()
 });
 
-type EvolutionSpecies = z.infer<typeof evolutionSpeciesSchema>;
+export type EvolutionSpecies = z.infer<typeof evolutionSpeciesSchema>;
 
 const pokeApiDetailedGraphQLSchema = z.object({
     data: z.object({
@@ -55,7 +56,16 @@ const pokeApiDetailedGraphQLSchema = z.object({
                 pokemon_v2_pokemontypes: z.array(
                     z.object({
                         pokemon_v2_type: z.object({
-                            name: z.string()
+                            name: z.string(),
+                            // Golpes que acertam este tipo com fator != 100 (pokemon_v2_type = tipo do golpe)
+                            pokemonV2TypeefficaciesByTargetTypeId: z.array(
+                                z.object({
+                                    damage_factor: z.number(),
+                                    pokemon_v2_type: z.object({
+                                        name: z.string()
+                                    })
+                                })
+                            )
                         })
                     })
                 ),
@@ -152,6 +162,7 @@ export interface PokemonDetailedData extends PokemonSimpleData {
     description: string;
     // Cada posição é um estágio: [base], [1ª evolução], [2ª evolução]
     evolutionStages: EvolutionNode[][];
+    typeMatchups: TypeMatchups;
     abilities: { name: string; isHidden: boolean }[];
     moves: { name: string; type: string; power: number | null; accuracy: number | null; pp: number | null; level: number }[];
 }
@@ -159,7 +170,7 @@ export interface PokemonDetailedData extends PokemonSimpleData {
 // Agrupa as espécies da cadeia por estágio seguindo evolves_from_species_id.
 // Ordenar só pelo id erra a ordem (Pichu #172 evolui para Pikachu #025)
 // e enfileira evoluções que são irmãs (as 8 da Eevee).
-function groupByEvolutionStage(species: EvolutionSpecies[]): EvolutionNode[][] {
+export function groupByEvolutionStage(species: EvolutionSpecies[]): EvolutionNode[][] {
     const byId = new Map(species.map((s) => [s.id, s]));
 
     const stageOf = (s: EvolutionSpecies): number => {
@@ -219,6 +230,12 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
           pokemon_v2_pokemontypes {
             pokemon_v2_type {
               name
+              pokemonV2TypeefficaciesByTargetTypeId(where: {damage_factor: {_neq: 100}}) {
+                damage_factor
+                pokemon_v2_type {
+                  name
+                }
+              }
             }
           }
           pokemon_v2_pokemonabilities {
@@ -272,6 +289,16 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
     const speciesList = data.pokemon_v2_pokemonspecy?.pokemon_v2_evolutionchain?.pokemon_v2_pokemonspecies || [];
     const evolutionStages = groupByEvolutionStage(speciesList);
 
+    // A API dá o fator em porcentagem (200 = 2×, 50 = ½×, 0 = imune)
+    const typeMatchups = computeTypeMatchups(
+        data.pokemon_v2_pokemontypes.map((t) =>
+            t.pokemon_v2_type.pokemonV2TypeefficaciesByTargetTypeId.map((e) => ({
+                attackingType: e.pokemon_v2_type.name,
+                factor: e.damage_factor / 100
+            }))
+        )
+    );
+
     return {
         name: data.name.charAt(0).toUpperCase() + data.name.slice(1),
         number: `#${data.id.toString().padStart(3, '0')}`,
@@ -285,6 +312,7 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
         })),
         description,
         evolutionStages,
+        typeMatchups,
         abilities: data.pokemon_v2_pokemonabilities.map((a) => ({
             name: a.pokemon_v2_ability.name,
             isHidden: a.is_hidden
