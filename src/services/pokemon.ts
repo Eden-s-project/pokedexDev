@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { computeTypeMatchups, type TypeMatchups } from '../utils/typeEffectiveness';
 import { formatPlace, groupEncounters, type EncounterRow, type GameEncounters } from '../utils/encounters';
+import { describeEvolutions, type EvolutionCondition } from '../utils/evolution';
 
 const pokeApiGraphQLSchema = z.object({
     data: z.object({
@@ -20,10 +21,35 @@ const pokeApiGraphQLSchema = z.object({
     })
 });
 
+const nameSchema = z.object({ name: z.string() }).nullable();
+
 const evolutionSpeciesSchema = z.object({
     id: z.number(),
     name: z.string(),
-    evolves_from_species_id: z.number().nullable()
+    evolves_from_species_id: z.number().nullable(),
+    // Formas de evoluir a partir da espécie anterior (vazio na espécie base)
+    pokemon_v2_pokemonevolutions: z.array(
+        z.object({
+            min_level: z.number().nullable(),
+            min_happiness: z.number().nullable(),
+            min_affection: z.number().nullable(),
+            min_beauty: z.number().nullable(),
+            time_of_day: z.string().nullable(),
+            needs_overworld_rain: z.boolean().nullable(),
+            turn_upside_down: z.boolean().nullable(),
+            relative_physical_stats: z.number().nullable(),
+            pokemon_v2_evolutiontrigger: nameSchema,
+            pokemon_v2_item: nameSchema,
+            pokemonV2ItemByHeldItemId: nameSchema,
+            pokemon_v2_move: nameSchema,
+            pokemon_v2_type: nameSchema,
+            pokemon_v2_location: nameSchema,
+            pokemon_v2_gender: nameSchema,
+            pokemonV2PokemonspecyByPartySpeciesId: nameSchema,
+            pokemonV2TypeByPartyTypeId: nameSchema,
+            pokemonV2PokemonspecyByTradeSpeciesId: nameSchema
+        })
+    )
 });
 
 export type EvolutionSpecies = z.infer<typeof evolutionSpeciesSchema>;
@@ -154,7 +180,29 @@ export interface EvolutionNode {
     id: number;
     name: string;
     image: string;
+    condition: string | null; // como evolui da anterior ("Nv. 16", "Thunder Stone"...); null na base
 }
+
+const toEvolutionCondition = (e: EvolutionSpecies['pokemon_v2_pokemonevolutions'][number]): EvolutionCondition => ({
+    trigger: e.pokemon_v2_evolutiontrigger?.name ?? 'other',
+    minLevel: e.min_level,
+    item: e.pokemon_v2_item?.name ?? null,
+    heldItem: e.pokemonV2ItemByHeldItemId?.name ?? null,
+    minHappiness: e.min_happiness,
+    minAffection: e.min_affection,
+    minBeauty: e.min_beauty,
+    timeOfDay: e.time_of_day ?? '',
+    knownMove: e.pokemon_v2_move?.name ?? null,
+    knownMoveType: e.pokemon_v2_type?.name ?? null,
+    location: e.pokemon_v2_location?.name ?? null,
+    gender: e.pokemon_v2_gender?.name ?? null,
+    needsRain: e.needs_overworld_rain ?? false,
+    partySpecies: e.pokemonV2PokemonspecyByPartySpeciesId?.name ?? null,
+    partyType: e.pokemonV2TypeByPartyTypeId?.name ?? null,
+    relativeStats: e.relative_physical_stats,
+    tradeSpecies: e.pokemonV2PokemonspecyByTradeSpeciesId?.name ?? null,
+    upsideDown: e.turn_upside_down ?? false
+});
 
 export interface PokemonDetailedData extends PokemonSimpleData {
     id: number;
@@ -189,7 +237,8 @@ export function groupByEvolutionStage(species: EvolutionSpecies[]): EvolutionNod
             .map((s) => ({
                 id: s.id,
                 name: s.name.charAt(0).toUpperCase() + s.name.slice(1),
-                image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${s.id}.png`
+                image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${s.id}.png`,
+                condition: describeEvolutions(s.pokemon_v2_pokemonevolutions.map(toEvolutionCondition))
             }))
     );
 }
@@ -223,6 +272,26 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
                 id
                 name
                 evolves_from_species_id
+                pokemon_v2_pokemonevolutions {
+                  min_level
+                  min_happiness
+                  min_affection
+                  min_beauty
+                  time_of_day
+                  needs_overworld_rain
+                  turn_upside_down
+                  relative_physical_stats
+                  pokemon_v2_evolutiontrigger { name }
+                  pokemon_v2_item { name }
+                  pokemonV2ItemByHeldItemId { name }
+                  pokemon_v2_move { name }
+                  pokemon_v2_type { name }
+                  pokemon_v2_location { name }
+                  pokemon_v2_gender { name }
+                  pokemonV2PokemonspecyByPartySpeciesId { name }
+                  pokemonV2TypeByPartyTypeId { name }
+                  pokemonV2PokemonspecyByTradeSpeciesId { name }
+                }
               }
             }
           }
