@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { computeTypeMatchups, type TypeMatchups } from '../utils/typeEffectiveness';
+import { formatPlace, groupEncounters, type EncounterRow, type GameEncounters } from '../utils/encounters';
 
 const pokeApiGraphQLSchema = z.object({
     data: z.object({
@@ -156,6 +157,7 @@ export interface EvolutionNode {
 }
 
 export interface PokemonDetailedData extends PokemonSimpleData {
+    id: number;
     weight: number;
     height: number;
     stats: { name: string; value: number }[];
@@ -303,6 +305,7 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
     );
 
     return {
+        id: data.id,
         name: data.name.charAt(0).toUpperCase() + data.name.slice(1),
         number: `#${data.id.toString().padStart(3, '0')}`,
         image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${data.id}.png`,
@@ -474,4 +477,121 @@ export function fetchSkillDescription(skill: SkillRef): Promise<SkillDescription
     return skill.kind === 'move'
         ? fetchMoveDescription(skill.name)
         : fetchAbilityDescription(skill.name);
+}
+
+// --------------------------------------------------------
+// Onde encontrar o Pokémon em cada jogo
+// A PokéAPI só tem esses dados até Ultra Sun/Ultra Moon (geração 7)
+// --------------------------------------------------------
+const encountersSchema = z.object({
+    data: z.object({
+        encounters: z.array(
+            z.object({
+                min_level: z.number(),
+                max_level: z.number(),
+                version_id: z.number(),
+                location_area_id: z.number(),
+                pokemon_v2_encounterslot: z.object({
+                    rarity: z.number().nullable(),
+                    encounter_method_id: z.number()
+                }).nullable(),
+                pokemon_v2_encounterconditionvaluemaps: z.array(
+                    z.object({
+                        pokemon_v2_encounterconditionvalue: z.object({ name: z.string() })
+                    })
+                )
+            })
+        ),
+        areas: z.array(
+            z.object({
+                id: z.number(),
+                name: z.string(),
+                pokemon_v2_location: z.object({
+                    name: z.string(),
+                    pokemon_v2_locationnames: z.array(z.object({ name: z.string() }))
+                }).nullable()
+            })
+        ),
+        versions: z.array(
+            z.object({
+                id: z.number(),
+                name: z.string(),
+                pokemon_v2_versionnames: z.array(z.object({ name: z.string() }))
+            })
+        ),
+        methods: z.array(z.object({ id: z.number(), name: z.string() }))
+    })
+});
+
+export async function fetchPokemonEncounters(pokemonId: number): Promise<GameEncounters[]> {
+    // Linhas enxutas (só ids) + nomes de áreas, jogos e métodos uma vez cada:
+    // o Zubat sozinho tem mais de 1.200 linhas de encontro
+    const query = `
+      query ($id: Int!) {
+        encounters: pokemon_v2_encounter(where: {pokemon_id: {_eq: $id}}) {
+          min_level
+          max_level
+          version_id
+          location_area_id
+          pokemon_v2_encounterslot {
+            rarity
+            encounter_method_id
+          }
+          pokemon_v2_encounterconditionvaluemaps {
+            pokemon_v2_encounterconditionvalue {
+              name
+            }
+          }
+        }
+        areas: pokemon_v2_locationarea(where: {pokemon_v2_encounters: {pokemon_id: {_eq: $id}}}) {
+          id
+          name
+          pokemon_v2_location {
+            name
+            pokemon_v2_locationnames(where: {language_id: {_eq: 9}}) {
+              name
+            }
+          }
+        }
+        versions: pokemon_v2_version(where: {pokemon_v2_encounters: {pokemon_id: {_eq: $id}}}) {
+          id
+          name
+          pokemon_v2_versionnames(where: {language_id: {_eq: 9}}) {
+            name
+          }
+        }
+        methods: pokemon_v2_encountermethod {
+          id
+          name
+        }
+      }
+    `;
+
+    const json = await postGraphQL(query, { id: pokemonId });
+    const { encounters, areas, versions, methods } = encountersSchema.parse(json).data;
+
+    const titleCase = (slug: string) =>
+        slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    const placeById = new Map(areas.map((area) => {
+        const location = area.pokemon_v2_location;
+        const locationLabel = location?.pokemon_v2_locationnames[0]?.name ?? titleCase(location?.name ?? area.name);
+        return [area.id, formatPlace(locationLabel, location?.name ?? '', area.name)];
+    }));
+    const versionNameById = new Map(versions.map((v) => [v.id, v.pokemon_v2_versionnames[0]?.name ?? titleCase(v.name)]));
+    const methodById = new Map(methods.map((m) => [m.id, m.name]));
+
+    const rows: EncounterRow[] = encounters.map((e) => ({
+        versionId: e.version_id,
+        versionName: versionNameById.get(e.version_id) ?? `Versão ${e.version_id}`,
+        areaId: e.location_area_id,
+        place: placeById.get(e.location_area_id) ?? `Área ${e.location_area_id}`,
+        method: methodById.get(e.pokemon_v2_encounterslot?.encounter_method_id ?? -1) ?? 'unknown',
+        rarity: e.pokemon_v2_encounterslot?.rarity ?? 0,
+        minLevel: e.min_level,
+        maxLevel: e.max_level,
+        conditions: e.pokemon_v2_encounterconditionvaluemaps.map((c) => c.pokemon_v2_encounterconditionvalue.name)
+    }));
+
+    return groupEncounters(rows);
 }
