@@ -1,3 +1,5 @@
+import { titleCase } from './text';
+
 // Uma linha de encontro da PokéAPI, já com os nomes resolvidos
 export interface EncounterRow {
     versionId: number;
@@ -134,8 +136,6 @@ const conditionLabels: Record<string, string> = {
     'radio-sinnoh': 'Rádio de Sinnoh',
 };
 
-const titleCase = (slug: string) =>
-    slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
 export function methodLabel(method: string): string {
     return methodLabels[method] ?? titleCase(method);

@@ -5,6 +5,29 @@ const species = (id: number, name: string, evolvesFrom: number | null): Evolutio
     id,
     name,
     evolves_from_species_id: evolvesFrom,
+    pokemon_v2_pokemonevolutions: [],
+});
+
+// Formato cru da API para uma evolução por nível
+const byLevel = (level: number): EvolutionSpecies['pokemon_v2_pokemonevolutions'][number] => ({
+    min_level: level,
+    min_happiness: null,
+    min_affection: null,
+    min_beauty: null,
+    time_of_day: '',
+    needs_overworld_rain: false,
+    turn_upside_down: false,
+    relative_physical_stats: null,
+    pokemon_v2_evolutiontrigger: { name: 'level-up' },
+    pokemon_v2_item: null,
+    pokemonV2ItemByHeldItemId: null,
+    pokemon_v2_move: null,
+    pokemon_v2_type: null,
+    pokemon_v2_location: null,
+    pokemon_v2_gender: null,
+    pokemonV2PokemonspecyByPartySpeciesId: null,
+    pokemonV2TypeByPartyTypeId: null,
+    pokemonV2PokemonspecyByTradeSpeciesId: null,
 });
 
 const namesPerStage = (list: EvolutionSpecies[]) =>
@@ -67,5 +90,15 @@ describe('groupByEvolutionStage', () => {
         const [[pichu]] = groupByEvolutionStage([species(172, 'pichu', null)]);
         expect(pichu.id).toBe(172);
         expect(pichu.image).toEndWith('/172.png');
+    });
+
+    test('cada nó traz como evolui da anterior; a base fica sem condição', () => {
+        const stages = groupByEvolutionStage([
+            species(1, 'bulbasaur', null),
+            { ...species(2, 'ivysaur', 1), pokemon_v2_pokemonevolutions: [byLevel(16)] },
+            { ...species(3, 'venusaur', 2), pokemon_v2_pokemonevolutions: [byLevel(32)] },
+        ]);
+
+        expect(stages.map(([node]) => node.condition)).toEqual([null, 'Nv. 16', 'Nv. 32']);
     });
 });

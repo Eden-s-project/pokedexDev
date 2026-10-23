@@ -25,6 +25,13 @@ function EvolutionCard({ evo }: { evo: EvolutionNode }) {
                 />
             </div>
             <span className="font-bold text-slate-900 uppercase tracking-widest font-retro text-lg">{evo.name}</span>
+            {/* Como evolui da anterior. Fica sob o nome (e não na seta) porque irmãs como as
+                8 evoluções da Eevee dividem a mesma seta e cada uma tem sua condição */}
+            {evo.condition && (
+                <span className="mt-1 max-w-[11rem] text-center text-xs font-bold text-slate-600 leading-snug">
+                    {evo.condition}
+                </span>
+            )}
         </Link>
     );
 }

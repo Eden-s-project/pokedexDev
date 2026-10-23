@@ -11,6 +11,7 @@ import { EvolutionChain } from "../components/EvolutionChain";
 import { PokemonSkills } from "../components/PokemonSkills";
 import { TypeMatchupsCard } from "../components/TypeMatchupsCard";
 import { EncounterLocations } from "../components/EncounterLocations";
+import { SpeciesInfoCard } from "../components/SpeciesInfoCard";
 
 export function PokemonDetails() {
   const { name } = useParams<{ name: string }>();
@@ -41,10 +42,12 @@ export function PokemonDetails() {
       {pokemon && !isLoading && !isError && (
         <div className="flex flex-col gap-8 max-w-5xl w-full">
           <div className="bg-slate-900 rounded-2xl shadow-[8px_8px_0_0_rgba(0,0,0,0.6)] overflow-hidden w-full flex flex-col md:flex-row border-4 border-slate-900 relative">
-            <PokemonProfileCard pokemon={pokemon} />
+            {/* key: shiny e grito voltam ao normal ao trocar de Pokémon */}
+            <PokemonProfileCard key={pokemon.id} pokemon={pokemon} />
             <PokemonDexEntry pokemon={pokemon} />
           </div>
           <TypeMatchupsCard matchups={pokemon.typeMatchups} />
+          <SpeciesInfoCard pokemon={pokemon} />
           <PokemonSkills abilities={pokemon.abilities} moves={pokemon.moves} />
           <EvolutionChain stages={pokemon.evolutionStages} />
           {/* key: ao trocar de Pokémon a aba de jogo escolhida volta ao padrão */}
