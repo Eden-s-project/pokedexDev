@@ -1,6 +1,6 @@
 import { titleCase } from './text';
 
-// Dados da espécie (pokemon_v2_pokemonspecies) usados na ficha
+// Dados da espécie (pokemonspecies) usados na ficha
 export interface SpeciesInfo {
     genus: string | null;        // "Flame Pokémon" (a API não tem pt-BR)
     genderRate: number;          // -1 = sem gênero; 0..8 = oitavos de fêmea

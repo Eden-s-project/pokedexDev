@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { computeTypeMatchups, formatMultiplier, type DamageRelation } from './typeEffectiveness';
 
-// Dados reais da PokéAPI (pokemonV2TypeefficaciesByTargetTypeId, fatores != 100)
+// Dados reais da PokéAPI (TypeefficaciesByTargetTypeId, fatores != 100)
 const fire: DamageRelation[] = [
     { attackingType: 'ground', factor: 2 },
     { attackingType: 'rock', factor: 2 },

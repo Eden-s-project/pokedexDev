@@ -14,7 +14,7 @@ Pokédex em React com os 1025 Pokémon da [PokéAPI](https://pokeapi.co/), publi
 ## Stack
 
 React 19 + TypeScript + Vite 8 (com React Compiler), Tailwind CSS 3, TanStack Query,
-React Router 7 e Zod. Os dados vêm do GraphQL da PokéAPI (`beta.pokeapi.co/graphql/v1beta`)
+React Router 7 e Zod. Os dados vêm do GraphQL da PokéAPI (`graphql.pokeapi.co/v1beta2`)
 e cada resposta é validada com Zod.
 
 ## Comandos

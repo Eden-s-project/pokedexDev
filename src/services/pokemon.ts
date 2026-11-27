@@ -5,15 +5,18 @@ import { describeEvolutions, type EvolutionCondition } from '../utils/evolution'
 import type { EvYieldEntry, SpeciesInfo } from '../utils/speciesInfo';
 import { titleCase } from '../utils/text';
 
+// Endpoint GraphQL da PokéAPI. O antigo (beta.pokeapi.co/graphql/v1beta) passou a responder 401.
+const POKEAPI_GRAPHQL_URL = 'https://graphql.pokeapi.co/v1beta2';
+
 const pokeApiGraphQLSchema = z.object({
     data: z.object({
-        pokemon_v2_pokemon: z.array(
+        pokemon: z.array(
             z.object({
                 id: z.number(),
                 name: z.string(),
-                pokemon_v2_pokemontypes: z.array(
+                pokemontypes: z.array(
                     z.object({
-                        pokemon_v2_type: z.object({
+                        type: z.object({
                             name: z.string()
                         })
                     })
@@ -30,7 +33,7 @@ const evolutionSpeciesSchema = z.object({
     name: z.string(),
     evolves_from_species_id: z.number().nullable(),
     // Formas de evoluir a partir da espécie anterior (vazio na espécie base)
-    pokemon_v2_pokemonevolutions: z.array(
+    pokemonevolutions: z.array(
         z.object({
             min_level: z.number().nullable(),
             min_happiness: z.number().nullable(),
@@ -40,16 +43,16 @@ const evolutionSpeciesSchema = z.object({
             needs_overworld_rain: z.boolean().nullable(),
             turn_upside_down: z.boolean().nullable(),
             relative_physical_stats: z.number().nullable(),
-            pokemon_v2_evolutiontrigger: nameSchema,
-            pokemon_v2_item: nameSchema,
-            pokemonV2ItemByHeldItemId: nameSchema,
-            pokemon_v2_move: nameSchema,
-            pokemon_v2_type: nameSchema,
-            pokemon_v2_location: nameSchema,
-            pokemon_v2_gender: nameSchema,
-            pokemonV2PokemonspecyByPartySpeciesId: nameSchema,
-            pokemonV2TypeByPartyTypeId: nameSchema,
-            pokemonV2PokemonspecyByTradeSpeciesId: nameSchema
+            evolutiontrigger: nameSchema,
+            item: nameSchema,
+            ItemByHeldItemId: nameSchema,
+            move: nameSchema,
+            type: nameSchema,
+            location: nameSchema,
+            gender: nameSchema,
+            PokemonspecyByPartySpeciesId: nameSchema,
+            TypeByPartyTypeId: nameSchema,
+            PokemonspecyByTradeSpeciesId: nameSchema
         })
     )
 });
@@ -58,14 +61,14 @@ export type EvolutionSpecies = z.infer<typeof evolutionSpeciesSchema>;
 
 const pokeApiDetailedGraphQLSchema = z.object({
     data: z.object({
-        pokemon_v2_pokemon: z.array(
+        pokemon: z.array(
             z.object({
                 id: z.number(),
                 name: z.string(),
                 height: z.number(),
                 weight: z.number(),
                 base_experience: z.number().nullable(),
-                pokemon_v2_pokemonspecy: z.object({
+                pokemonspecy: z.object({
                     gender_rate: z.number(),
                     capture_rate: z.number(),
                     base_happiness: z.number().nullable(),
@@ -73,39 +76,39 @@ const pokeApiDetailedGraphQLSchema = z.object({
                     is_legendary: z.boolean(),
                     is_mythical: z.boolean(),
                     is_baby: z.boolean(),
-                    pokemon_v2_growthrate: nameSchema,
-                    pokemon_v2_pokemonhabitat: nameSchema,
-                    pokemon_v2_pokemonspeciesnames: z.array(z.object({ genus: z.string() })),
-                    pokemon_v2_pokemonegggroups: z.array(
-                        z.object({ pokemon_v2_egggroup: nameSchema })
+                    growthrate: nameSchema,
+                    pokemonhabitat: nameSchema,
+                    pokemonspeciesnames: z.array(z.object({ genus: z.string() })),
+                    pokemonegggroups: z.array(
+                        z.object({ egggroup: nameSchema })
                     ),
-                    pokemon_v2_pokemonspeciesflavortexts: z.array(
+                    pokemonspeciesflavortexts: z.array(
                         z.object({
                             flavor_text: z.string()
                         })
                     ),
-                    pokemon_v2_evolutionchain: z.object({
-                        pokemon_v2_pokemonspecies: z.array(evolutionSpeciesSchema)
+                    evolutionchain: z.object({
+                        pokemonspecies: z.array(evolutionSpeciesSchema)
                     }).nullable()
                 }).nullable(),
-                pokemon_v2_pokemonstats: z.array(
+                pokemonstats: z.array(
                     z.object({
                         base_stat: z.number(),
                         effort: z.number(),
-                        pokemon_v2_stat: z.object({
+                        stat: z.object({
                             name: z.string()
                         })
                     })
                 ),
-                pokemon_v2_pokemontypes: z.array(
+                pokemontypes: z.array(
                     z.object({
-                        pokemon_v2_type: z.object({
+                        type: z.object({
                             name: z.string(),
-                            // Golpes que acertam este tipo com fator != 100 (pokemon_v2_type = tipo do golpe)
-                            pokemonV2TypeefficaciesByTargetTypeId: z.array(
+                            // Golpes que acertam este tipo com fator != 100 (type = tipo do golpe)
+                            TypeefficaciesByTargetTypeId: z.array(
                                 z.object({
                                     damage_factor: z.number(),
-                                    pokemon_v2_type: z.object({
+                                    type: z.object({
                                         name: z.string()
                                     })
                                 })
@@ -113,23 +116,23 @@ const pokeApiDetailedGraphQLSchema = z.object({
                         })
                     })
                 ),
-                pokemon_v2_pokemonabilities: z.array(
+                pokemonabilities: z.array(
                     z.object({
                         is_hidden: z.boolean(),
-                        pokemon_v2_ability: z.object({
+                        ability: z.object({
                             name: z.string()
                         })
                     })
                 ),
-                pokemon_v2_pokemonmoves: z.array(
+                pokemonmoves: z.array(
                     z.object({
                         level: z.number(),
-                        pokemon_v2_move: z.object({
+                        move: z.object({
                             name: z.string(),
                             accuracy: z.number().nullable(),
                             power: z.number().nullable(),
                             pp: z.number().nullable(),
-                            pokemon_v2_type: z.object({
+                            type: z.object({
                                 name: z.string()
                             })
                         })
@@ -151,11 +154,11 @@ export async function fetchAllPokemon(): Promise<PokemonSimpleData[]> {
     // Usamos GraphQL para pedir exatamente os campos que queremos para os 1025 Pokémons, em 1 única requisição!
     const query = `
       query {
-        pokemon_v2_pokemon(limit: 1025) {
+        pokemon(limit: 1025) {
           id
           name
-          pokemon_v2_pokemontypes {
-            pokemon_v2_type {
+          pokemontypes {
+            type {
               name
             }
           }
@@ -163,7 +166,7 @@ export async function fetchAllPokemon(): Promise<PokemonSimpleData[]> {
       }
     `;
 
-    const response = await fetch('https://beta.pokeapi.co/graphql/v1beta', {
+    const response = await fetch(POKEAPI_GRAPHQL_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -183,12 +186,12 @@ export async function fetchAllPokemon(): Promise<PokemonSimpleData[]> {
 
     // 4. Mapeamos os dados! 
     // Repare que não usamos mais "any" pois o Zod já garantiu pro TypeScript que os dados estão corretos.
-    return validResponse.data.pokemon_v2_pokemon.map((pokemon) => {
+    return validResponse.data.pokemon.map((pokemon) => {
         return {
             name: pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1),
             number: `#${pokemon.id.toString().padStart(3, '0')}`,
             image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`,
-            types: pokemon.pokemon_v2_pokemontypes.map((t) => t.pokemon_v2_type.name)
+            types: pokemon.pokemontypes.map((t) => t.type.name)
         };
     });
 }
@@ -200,24 +203,24 @@ export interface EvolutionNode {
     condition: string | null; // como evolui da anterior ("Nv. 16", "Thunder Stone"...); null na base
 }
 
-const toEvolutionCondition = (e: EvolutionSpecies['pokemon_v2_pokemonevolutions'][number]): EvolutionCondition => ({
-    trigger: e.pokemon_v2_evolutiontrigger?.name ?? 'other',
+const toEvolutionCondition = (e: EvolutionSpecies['pokemonevolutions'][number]): EvolutionCondition => ({
+    trigger: e.evolutiontrigger?.name ?? 'other',
     minLevel: e.min_level,
-    item: e.pokemon_v2_item?.name ?? null,
-    heldItem: e.pokemonV2ItemByHeldItemId?.name ?? null,
+    item: e.item?.name ?? null,
+    heldItem: e.ItemByHeldItemId?.name ?? null,
     minHappiness: e.min_happiness,
     minAffection: e.min_affection,
     minBeauty: e.min_beauty,
     timeOfDay: e.time_of_day ?? '',
-    knownMove: e.pokemon_v2_move?.name ?? null,
-    knownMoveType: e.pokemon_v2_type?.name ?? null,
-    location: e.pokemon_v2_location?.name ?? null,
-    gender: e.pokemon_v2_gender?.name ?? null,
+    knownMove: e.move?.name ?? null,
+    knownMoveType: e.type?.name ?? null,
+    location: e.location?.name ?? null,
+    gender: e.gender?.name ?? null,
     needsRain: e.needs_overworld_rain ?? false,
-    partySpecies: e.pokemonV2PokemonspecyByPartySpeciesId?.name ?? null,
-    partyType: e.pokemonV2TypeByPartyTypeId?.name ?? null,
+    partySpecies: e.PokemonspecyByPartySpeciesId?.name ?? null,
+    partyType: e.TypeByPartyTypeId?.name ?? null,
     relativeStats: e.relative_physical_stats,
-    tradeSpecies: e.pokemonV2PokemonspecyByTradeSpeciesId?.name ?? null,
+    tradeSpecies: e.PokemonspecyByTradeSpeciesId?.name ?? null,
     upsideDown: e.turn_upside_down ?? false
 });
 
@@ -258,7 +261,7 @@ export function groupByEvolutionStage(species: EvolutionSpecies[]): EvolutionNod
                 id: s.id,
                 name: s.name.charAt(0).toUpperCase() + s.name.slice(1),
                 image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${s.id}.png`,
-                condition: describeEvolutions(s.pokemon_v2_pokemonevolutions.map(toEvolutionCondition))
+                condition: describeEvolutions(s.pokemonevolutions.map(toEvolutionCondition))
             }))
     );
 }
@@ -277,14 +280,14 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
         : { name: { _eq: name.toLowerCase() } };
 
     const query = `
-      query ($where: pokemon_v2_pokemon_bool_exp!) {
-        pokemon_v2_pokemon(where: $where) {
+      query ($where: pokemon_bool_exp!) {
+        pokemon(where: $where) {
           id
           name
           height
           weight
           base_experience
-          pokemon_v2_pokemonspecy {
+          pokemonspecy {
             gender_rate
             capture_rate
             base_happiness
@@ -292,19 +295,19 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
             is_legendary
             is_mythical
             is_baby
-            pokemon_v2_growthrate { name }
-            pokemon_v2_pokemonhabitat { name }
-            pokemon_v2_pokemonspeciesnames(where: {language_id: {_eq: 9}}) { genus }
-            pokemon_v2_pokemonegggroups { pokemon_v2_egggroup { name } }
-            pokemon_v2_pokemonspeciesflavortexts(where: {language_id: {_eq: 9}}, order_by: {version_id: desc}, limit: 1) {
+            growthrate { name }
+            pokemonhabitat { name }
+            pokemonspeciesnames(where: {language_id: {_eq: 9}}) { genus }
+            pokemonegggroups { egggroup { name } }
+            pokemonspeciesflavortexts(where: {language_id: {_eq: 9}}, order_by: {version_id: desc}, limit: 1) {
               flavor_text
             }
-            pokemon_v2_evolutionchain {
-              pokemon_v2_pokemonspecies(order_by: {id: asc}) {
+            evolutionchain {
+              pokemonspecies(order_by: {id: asc}) {
                 id
                 name
                 evolves_from_species_id
-                pokemon_v2_pokemonevolutions {
+                pokemonevolutions {
                   min_level
                   min_happiness
                   min_affection
@@ -313,52 +316,52 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
                   needs_overworld_rain
                   turn_upside_down
                   relative_physical_stats
-                  pokemon_v2_evolutiontrigger { name }
-                  pokemon_v2_item { name }
-                  pokemonV2ItemByHeldItemId { name }
-                  pokemon_v2_move { name }
-                  pokemon_v2_type { name }
-                  pokemon_v2_location { name }
-                  pokemon_v2_gender { name }
-                  pokemonV2PokemonspecyByPartySpeciesId { name }
-                  pokemonV2TypeByPartyTypeId { name }
-                  pokemonV2PokemonspecyByTradeSpeciesId { name }
+                  evolutiontrigger { name }
+                  item { name }
+                  ItemByHeldItemId { name }
+                  move { name }
+                  type { name }
+                  location { name }
+                  gender { name }
+                  PokemonspecyByPartySpeciesId { name }
+                  TypeByPartyTypeId { name }
+                  PokemonspecyByTradeSpeciesId { name }
                 }
               }
             }
           }
-          pokemon_v2_pokemonstats {
+          pokemonstats {
             base_stat
             effort
-            pokemon_v2_stat {
+            stat {
               name
             }
           }
-          pokemon_v2_pokemontypes {
-            pokemon_v2_type {
+          pokemontypes {
+            type {
               name
-              pokemonV2TypeefficaciesByTargetTypeId(where: {damage_factor: {_neq: 100}}) {
+              TypeefficaciesByTargetTypeId(where: {damage_factor: {_neq: 100}}) {
                 damage_factor
-                pokemon_v2_type {
+                type {
                   name
                 }
               }
             }
           }
-          pokemon_v2_pokemonabilities {
+          pokemonabilities {
             is_hidden
-            pokemon_v2_ability {
+            ability {
               name
             }
           }
-          pokemon_v2_pokemonmoves(where: {pokemon_v2_movelearnmethod: {name: {_eq: "level-up"}}}, distinct_on: move_id) {
+          pokemonmoves(where: {movelearnmethod: {name: {_eq: "level-up"}}}, distinct_on: move_id) {
             level
-            pokemon_v2_move {
+            move {
               name
               accuracy
               power
               pp
-              pokemon_v2_type {
+              type {
                 name
               }
             }
@@ -367,7 +370,7 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
       }
     `;
 
-    const response = await fetch('https://beta.pokeapi.co/graphql/v1beta', {
+    const response = await fetch(POKEAPI_GRAPHQL_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -382,26 +385,26 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
     const json = await response.json();
     const validResponse = pokeApiDetailedGraphQLSchema.parse(json);
 
-    if (validResponse.data.pokemon_v2_pokemon.length === 0) {
+    if (validResponse.data.pokemon.length === 0) {
         throw new Error(POKEMON_NOT_FOUND);
     }
 
-    const data = validResponse.data.pokemon_v2_pokemon[0];
-    const specy = data.pokemon_v2_pokemonspecy;
+    const data = validResponse.data.pokemon[0];
+    const specy = data.pokemonspecy;
 
-    const flavorTexts = data.pokemon_v2_pokemonspecy?.pokemon_v2_pokemonspeciesflavortexts || [];
+    const flavorTexts = data.pokemonspecy?.pokemonspeciesflavortexts || [];
     const description = flavorTexts.length > 0 
         ? flavorTexts[0].flavor_text.replace(/[\n\f\r]/g, ' ') 
         : 'Descrição não disponível.';
 
-    const speciesList = data.pokemon_v2_pokemonspecy?.pokemon_v2_evolutionchain?.pokemon_v2_pokemonspecies || [];
+    const speciesList = data.pokemonspecy?.evolutionchain?.pokemonspecies || [];
     const evolutionStages = groupByEvolutionStage(speciesList);
 
     // A API dá o fator em porcentagem (200 = 2×, 50 = ½×, 0 = imune)
     const typeMatchups = computeTypeMatchups(
-        data.pokemon_v2_pokemontypes.map((t) =>
-            t.pokemon_v2_type.pokemonV2TypeefficaciesByTargetTypeId.map((e) => ({
-                attackingType: e.pokemon_v2_type.name,
+        data.pokemontypes.map((t) =>
+            t.type.TypeefficaciesByTargetTypeId.map((e) => ({
+                attackingType: e.type.name,
                 factor: e.damage_factor / 100
             }))
         )
@@ -412,44 +415,44 @@ export async function fetchPokemonByName(name: string): Promise<PokemonDetailedD
         name: data.name.charAt(0).toUpperCase() + data.name.slice(1),
         number: `#${data.id.toString().padStart(3, '0')}`,
         image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${data.id}.png`,
-        types: data.pokemon_v2_pokemontypes.map((t) => t.pokemon_v2_type.name),
+        types: data.pokemontypes.map((t) => t.type.name),
         weight: data.weight / 10,
         height: data.height / 10,
-        stats: data.pokemon_v2_pokemonstats.map((s) => ({
-            name: s.pokemon_v2_stat.name,
+        stats: data.pokemonstats.map((s) => ({
+            name: s.stat.name,
             value: s.base_stat
         })),
         description,
         evolutionStages,
         typeMatchups,
         species: specy && {
-            genus: specy.pokemon_v2_pokemonspeciesnames[0]?.genus ?? null,
+            genus: specy.pokemonspeciesnames[0]?.genus ?? null,
             genderRate: specy.gender_rate,
             captureRate: specy.capture_rate,
             baseHappiness: specy.base_happiness,
             hatchCounter: specy.hatch_counter,
-            growthRate: specy.pokemon_v2_growthrate?.name ?? null,
-            habitat: specy.pokemon_v2_pokemonhabitat?.name ?? null,
-            eggGroups: specy.pokemon_v2_pokemonegggroups.flatMap((g) => g.pokemon_v2_egggroup?.name ?? []),
+            growthRate: specy.growthrate?.name ?? null,
+            habitat: specy.pokemonhabitat?.name ?? null,
+            eggGroups: specy.pokemonegggroups.flatMap((g) => g.egggroup?.name ?? []),
             isLegendary: specy.is_legendary,
             isMythical: specy.is_mythical,
             isBaby: specy.is_baby
         },
         baseExperience: data.base_experience,
-        evYield: data.pokemon_v2_pokemonstats
+        evYield: data.pokemonstats
             .filter((s) => s.effort > 0)
-            .map((s) => ({ name: s.pokemon_v2_stat.name, value: s.effort })),
-        abilities: data.pokemon_v2_pokemonabilities.map((a) => ({
-            name: a.pokemon_v2_ability.name,
+            .map((s) => ({ name: s.stat.name, value: s.effort })),
+        abilities: data.pokemonabilities.map((a) => ({
+            name: a.ability.name,
             isHidden: a.is_hidden
         })),
-        moves: data.pokemon_v2_pokemonmoves
+        moves: data.pokemonmoves
           .map((m) => ({
-            name: m.pokemon_v2_move.name,
-            type: m.pokemon_v2_move.pokemon_v2_type.name,
-            power: m.pokemon_v2_move.power,
-            accuracy: m.pokemon_v2_move.accuracy,
-            pp: m.pokemon_v2_move.pp,
+            name: m.move.name,
+            type: m.move.type.name,
+            power: m.move.power,
+            accuracy: m.move.accuracy,
+            pp: m.move.pp,
             level: m.level
           }))
           .sort((a, b) => a.level - b.level)
@@ -465,14 +468,14 @@ const flavorTextSchema = z.object({ flavor_text: z.string() });
 
 const moveDescriptionSchema = z.object({
     data: z.object({
-        pokemon_v2_move: z.array(
+        move: z.array(
             z.object({
                 move_effect_chance: z.number().nullable(),
-                pokemon_v2_movedamageclass: z.object({ name: z.string() }).nullable(),
-                pokemon_v2_moveeffect: z.object({
-                    pokemon_v2_moveeffecteffecttexts: z.array(effectTextSchema)
+                movedamageclass: z.object({ name: z.string() }).nullable(),
+                moveeffect: z.object({
+                    moveeffecteffecttexts: z.array(effectTextSchema)
                 }).nullable(),
-                pokemon_v2_moveflavortexts: z.array(flavorTextSchema)
+                moveflavortexts: z.array(flavorTextSchema)
             })
         )
     })
@@ -480,10 +483,10 @@ const moveDescriptionSchema = z.object({
 
 const abilityDescriptionSchema = z.object({
     data: z.object({
-        pokemon_v2_ability: z.array(
+        ability: z.array(
             z.object({
-                pokemon_v2_abilityeffecttexts: z.array(effectTextSchema),
-                pokemon_v2_abilityflavortexts: z.array(flavorTextSchema)
+                abilityeffecttexts: z.array(effectTextSchema),
+                abilityflavortexts: z.array(flavorTextSchema)
             })
         )
     })
@@ -506,7 +509,7 @@ function cleanText(text: string): string {
 }
 
 async function postGraphQL(query: string, variables: Record<string, unknown>): Promise<unknown> {
-    const response = await fetch('https://beta.pokeapi.co/graphql/v1beta', {
+    const response = await fetch(POKEAPI_GRAPHQL_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -525,17 +528,17 @@ async function fetchMoveDescription(name: string): Promise<SkillDescription> {
     // Pega o texto do jogo mais recente (maior version_group_id)
     const query = `
       query ($name: String!) {
-        pokemon_v2_move(where: {name: {_eq: $name}}) {
+        move(where: {name: {_eq: $name}}) {
           move_effect_chance
-          pokemon_v2_movedamageclass {
+          movedamageclass {
             name
           }
-          pokemon_v2_moveeffect {
-            pokemon_v2_moveeffecteffecttexts(where: {language_id: {_eq: 9}}) {
+          moveeffect {
+            moveeffecteffecttexts(where: {language_id: {_eq: 9}}) {
               short_effect
             }
           }
-          pokemon_v2_moveflavortexts(where: {language_id: {_eq: 9}}, order_by: {version_group_id: desc}, limit: 1) {
+          moveflavortexts(where: {language_id: {_eq: 9}}, order_by: {version_group_id: desc}, limit: 1) {
             flavor_text
           }
         }
@@ -543,14 +546,14 @@ async function fetchMoveDescription(name: string): Promise<SkillDescription> {
     `;
 
     const json = await postGraphQL(query, { name });
-    const move = moveDescriptionSchema.parse(json).data.pokemon_v2_move[0];
+    const move = moveDescriptionSchema.parse(json).data.move[0];
 
     if (!move) {
         throw new Error('Golpe não encontrado');
     }
 
-    const shortEffect = move.pokemon_v2_moveeffect?.pokemon_v2_moveeffecteffecttexts[0]?.short_effect;
-    const flavorText = move.pokemon_v2_moveflavortexts[0]?.flavor_text;
+    const shortEffect = move.moveeffect?.moveeffecteffecttexts[0]?.short_effect;
+    const flavorText = move.moveflavortexts[0]?.flavor_text;
 
     return {
         flavorText: flavorText ? cleanText(flavorText) : null,
@@ -558,18 +561,18 @@ async function fetchMoveDescription(name: string): Promise<SkillDescription> {
         effect: shortEffect
             ? cleanText(shortEffect.replaceAll('$effect_chance', String(move.move_effect_chance ?? '')))
             : null,
-        damageClass: move.pokemon_v2_movedamageclass?.name ?? null
+        damageClass: move.movedamageclass?.name ?? null
     };
 }
 
 async function fetchAbilityDescription(name: string): Promise<SkillDescription> {
     const query = `
       query ($name: String!) {
-        pokemon_v2_ability(where: {name: {_eq: $name}}) {
-          pokemon_v2_abilityeffecttexts(where: {language_id: {_eq: 9}}) {
+        ability(where: {name: {_eq: $name}}) {
+          abilityeffecttexts(where: {language_id: {_eq: 9}}) {
             short_effect
           }
-          pokemon_v2_abilityflavortexts(where: {language_id: {_eq: 9}}, order_by: {version_group_id: desc}, limit: 1) {
+          abilityflavortexts(where: {language_id: {_eq: 9}}, order_by: {version_group_id: desc}, limit: 1) {
             flavor_text
           }
         }
@@ -577,14 +580,14 @@ async function fetchAbilityDescription(name: string): Promise<SkillDescription> 
     `;
 
     const json = await postGraphQL(query, { name });
-    const ability = abilityDescriptionSchema.parse(json).data.pokemon_v2_ability[0];
+    const ability = abilityDescriptionSchema.parse(json).data.ability[0];
 
     if (!ability) {
         throw new Error('Habilidade não encontrada');
     }
 
-    const shortEffect = ability.pokemon_v2_abilityeffecttexts[0]?.short_effect;
-    const flavorText = ability.pokemon_v2_abilityflavortexts[0]?.flavor_text;
+    const shortEffect = ability.abilityeffecttexts[0]?.short_effect;
+    const flavorText = ability.abilityflavortexts[0]?.flavor_text;
 
     return {
         flavorText: flavorText ? cleanText(flavorText) : null,
@@ -611,13 +614,13 @@ const encountersSchema = z.object({
                 max_level: z.number(),
                 version_id: z.number(),
                 location_area_id: z.number(),
-                pokemon_v2_encounterslot: z.object({
+                encounterslot: z.object({
                     rarity: z.number().nullable(),
                     encounter_method_id: z.number()
                 }).nullable(),
-                pokemon_v2_encounterconditionvaluemaps: z.array(
+                encounterconditionvaluemaps: z.array(
                     z.object({
-                        pokemon_v2_encounterconditionvalue: z.object({ name: z.string() })
+                        encounterconditionvalue: z.object({ name: z.string() })
                     })
                 )
             })
@@ -626,9 +629,9 @@ const encountersSchema = z.object({
             z.object({
                 id: z.number(),
                 name: z.string(),
-                pokemon_v2_location: z.object({
+                location: z.object({
                     name: z.string(),
-                    pokemon_v2_locationnames: z.array(z.object({ name: z.string() }))
+                    locationnames: z.array(z.object({ name: z.string() }))
                 }).nullable()
             })
         ),
@@ -636,7 +639,7 @@ const encountersSchema = z.object({
             z.object({
                 id: z.number(),
                 name: z.string(),
-                pokemon_v2_versionnames: z.array(z.object({ name: z.string() }))
+                versionnames: z.array(z.object({ name: z.string() }))
             })
         ),
         methods: z.array(z.object({ id: z.number(), name: z.string() }))
@@ -648,39 +651,39 @@ export async function fetchPokemonEncounters(pokemonId: number): Promise<GameEnc
     // o Zubat sozinho tem mais de 1.200 linhas de encontro
     const query = `
       query ($id: Int!) {
-        encounters: pokemon_v2_encounter(where: {pokemon_id: {_eq: $id}}) {
+        encounters: encounter(where: {pokemon_id: {_eq: $id}}) {
           min_level
           max_level
           version_id
           location_area_id
-          pokemon_v2_encounterslot {
+          encounterslot {
             rarity
             encounter_method_id
           }
-          pokemon_v2_encounterconditionvaluemaps {
-            pokemon_v2_encounterconditionvalue {
+          encounterconditionvaluemaps {
+            encounterconditionvalue {
               name
             }
           }
         }
-        areas: pokemon_v2_locationarea(where: {pokemon_v2_encounters: {pokemon_id: {_eq: $id}}}) {
+        areas: locationarea(where: {encounters: {pokemon_id: {_eq: $id}}}) {
           id
           name
-          pokemon_v2_location {
+          location {
             name
-            pokemon_v2_locationnames(where: {language_id: {_eq: 9}}) {
+            locationnames(where: {language_id: {_eq: 9}}) {
               name
             }
           }
         }
-        versions: pokemon_v2_version(where: {pokemon_v2_encounters: {pokemon_id: {_eq: $id}}}) {
+        versions: version(where: {encounters: {pokemon_id: {_eq: $id}}}) {
           id
           name
-          pokemon_v2_versionnames(where: {language_id: {_eq: 9}}) {
+          versionnames(where: {language_id: {_eq: 9}}) {
             name
           }
         }
-        methods: pokemon_v2_encountermethod {
+        methods: encountermethod {
           id
           name
         }
@@ -691,11 +694,11 @@ export async function fetchPokemonEncounters(pokemonId: number): Promise<GameEnc
     const { encounters, areas, versions, methods } = encountersSchema.parse(json).data;
 
     const placeById = new Map(areas.map((area) => {
-        const location = area.pokemon_v2_location;
-        const locationLabel = location?.pokemon_v2_locationnames[0]?.name ?? titleCase(location?.name ?? area.name);
+        const location = area.location;
+        const locationLabel = location?.locationnames[0]?.name ?? titleCase(location?.name ?? area.name);
         return [area.id, formatPlace(locationLabel, location?.name ?? '', area.name)];
     }));
-    const versionNameById = new Map(versions.map((v) => [v.id, v.pokemon_v2_versionnames[0]?.name ?? titleCase(v.name)]));
+    const versionNameById = new Map(versions.map((v) => [v.id, v.versionnames[0]?.name ?? titleCase(v.name)]));
     const methodById = new Map(methods.map((m) => [m.id, m.name]));
 
     const rows: EncounterRow[] = encounters.map((e) => ({
@@ -703,11 +706,11 @@ export async function fetchPokemonEncounters(pokemonId: number): Promise<GameEnc
         versionName: versionNameById.get(e.version_id) ?? `Versão ${e.version_id}`,
         areaId: e.location_area_id,
         place: placeById.get(e.location_area_id) ?? `Área ${e.location_area_id}`,
-        method: methodById.get(e.pokemon_v2_encounterslot?.encounter_method_id ?? -1) ?? 'unknown',
-        rarity: e.pokemon_v2_encounterslot?.rarity ?? 0,
+        method: methodById.get(e.encounterslot?.encounter_method_id ?? -1) ?? 'unknown',
+        rarity: e.encounterslot?.rarity ?? 0,
         minLevel: e.min_level,
         maxLevel: e.max_level,
-        conditions: e.pokemon_v2_encounterconditionvaluemaps.map((c) => c.pokemon_v2_encounterconditionvalue.name)
+        conditions: e.encounterconditionvaluemaps.map((c) => c.encounterconditionvalue.name)
     }));
 
     return groupEncounters(rows);
