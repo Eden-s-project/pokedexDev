@@ -5,11 +5,11 @@ const species = (id: number, name: string, evolvesFrom: number | null): Evolutio
     id,
     name,
     evolves_from_species_id: evolvesFrom,
-    pokemon_v2_pokemonevolutions: [],
+    pokemonevolutions: [],
 });
 
 // Formato cru da API para uma evolução por nível
-const byLevel = (level: number): EvolutionSpecies['pokemon_v2_pokemonevolutions'][number] => ({
+const byLevel = (level: number): EvolutionSpecies['pokemonevolutions'][number] => ({
     min_level: level,
     min_happiness: null,
     min_affection: null,
@@ -18,16 +18,16 @@ const byLevel = (level: number): EvolutionSpecies['pokemon_v2_pokemonevolutions'
     needs_overworld_rain: false,
     turn_upside_down: false,
     relative_physical_stats: null,
-    pokemon_v2_evolutiontrigger: { name: 'level-up' },
-    pokemon_v2_item: null,
-    pokemonV2ItemByHeldItemId: null,
-    pokemon_v2_move: null,
-    pokemon_v2_type: null,
-    pokemon_v2_location: null,
-    pokemon_v2_gender: null,
-    pokemonV2PokemonspecyByPartySpeciesId: null,
-    pokemonV2TypeByPartyTypeId: null,
-    pokemonV2PokemonspecyByTradeSpeciesId: null,
+    evolutiontrigger: { name: 'level-up' },
+    item: null,
+    ItemByHeldItemId: null,
+    move: null,
+    type: null,
+    location: null,
+    gender: null,
+    PokemonspecyByPartySpeciesId: null,
+    TypeByPartyTypeId: null,
+    PokemonspecyByTradeSpeciesId: null,
 });
 
 const namesPerStage = (list: EvolutionSpecies[]) =>
@@ -95,8 +95,8 @@ describe('groupByEvolutionStage', () => {
     test('cada nó traz como evolui da anterior; a base fica sem condição', () => {
         const stages = groupByEvolutionStage([
             species(1, 'bulbasaur', null),
-            { ...species(2, 'ivysaur', 1), pokemon_v2_pokemonevolutions: [byLevel(16)] },
-            { ...species(3, 'venusaur', 2), pokemon_v2_pokemonevolutions: [byLevel(32)] },
+            { ...species(2, 'ivysaur', 1), pokemonevolutions: [byLevel(16)] },
+            { ...species(3, 'venusaur', 2), pokemonevolutions: [byLevel(32)] },
         ]);
 
         expect(stages.map(([node]) => node.condition)).toEqual([null, 'Nv. 16', 'Nv. 32']);

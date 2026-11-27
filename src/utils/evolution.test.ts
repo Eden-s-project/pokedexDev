@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { describeEvolutions, type EvolutionCondition } from './evolution';
 
-// Valores reais da PokéAPI (pokemon_v2_pokemonevolution)
+// Valores reais da PokéAPI (pokemonevolution)
 const evo = (overrides: Partial<EvolutionCondition>): EvolutionCondition => ({
     trigger: 'level-up',
     minLevel: null,

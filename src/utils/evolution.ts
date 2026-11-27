@@ -1,6 +1,6 @@
 import { titleCase } from './text';
 
-// Uma forma de evoluir, como vem da PokéAPI (pokemon_v2_pokemonevolution), com os nomes em slug
+// Uma forma de evoluir, como vem da PokéAPI (pokemonevolution), com os nomes em slug
 export interface EvolutionCondition {
     trigger: string;            // level-up, use-item, trade, shed...
     minLevel: number | null;
